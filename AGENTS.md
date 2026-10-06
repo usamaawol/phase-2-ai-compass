@@ -15,3 +15,4 @@
 - Keep discovery filters in validated URL search parameters; category pages reuse the same filtering presentation.
 - Treat demo product metadata as unverified and never turn illustrative pricing or popularity into factual claims.
 - Define all visual roles in the global semantic design system and reuse the existing Button component for controls.
+- Apply light mode through semantic CSS overrides on the document root; persist only the display preference locally to keep themes consistent across pages without a backend.
