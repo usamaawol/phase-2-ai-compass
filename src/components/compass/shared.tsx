@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Compass, Search, ArrowUpRight, ArrowRight, Menu, X, Sparkles, Code2, AudioLines, Bot, Command, Sailboat, Heart, type LucideIcon } from 'lucide-react';
+import { Compass, Search, ArrowUpRight, ArrowRight, Menu, X, Sparkles, Code2, AudioLines, Bot, Command, Sailboat, Heart, Bookmark, BookmarkCheck, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './theme-toggle';
 import { categories, getCategory, taskPresets, type Category, type Tool } from '@/lib/catalog';
+import { useBookmarks } from '@/hooks/use-bookmarks';
 export function Brand(){return <Link to="/" className="brand" aria-label="AI Compass home"><Compass strokeWidth={1.6}/><span>AI Compass<span className="text-primary">.</span></span></Link>}
 export function Navigation(){const [open,setOpen]=useState(false);return <header className="site-header"><div className="shell header-inner"><Brand/><nav aria-label="Main navigation" className="nav-links"><NavLinks/></nav><div className="header-actions"><ThemeToggle/><Button variant="ghost" size="icon" className="search-nav" asChild><Link to="/discover" aria-label="Search AI tools" title="Search AI tools"><Search/></Link></Button><Button asChild className="explore-nav"><Link to="/discover">Explore AI <ArrowUpRight/></Link></Button><Button variant="ghost" size="icon" className="mobile-menu-button" aria-label={open?'Close menu':'Open menu'} aria-expanded={open} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</Button></div></div>{open&&<nav className="mobile-nav" aria-label="Mobile navigation" onClick={()=>setOpen(false)}><NavLinks/></nav>}</header>}
 function NavLinks(){return <><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/discover">Discover</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/categories">Categories</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/compare">Compare</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/about">About</Link></>}
@@ -24,6 +25,7 @@ export function Footer(){
             <Link className="nav-link" to="/categories">Categories</Link>
             <Link className="nav-link" to="/compare">Compare</Link>
             <Link className="nav-link" to="/submit">Submit a Tool</Link>
+            <Link className="nav-link" to="/changelog">Changelog</Link>
             <Link className="nav-link" to="/about">About</Link>
           </nav>
         </div>
@@ -40,7 +42,40 @@ export function TaskChips({all=false}:{all?:boolean}){return <div className="tas
 export function CategoryCard({category:c}:{category:Category}){const Icon=c.icon;return <Link to="/category/$slug" params={{slug:c.slug}} className="category-card"><div className="category-top"><Icon className="category-icon" strokeWidth={1.6}/><ArrowUpRight className="category-arrow"/></div><h3>{c.name}</h3><p>{c.description}</p><span className="category-count">{c.tool_count} {c.tool_count===1?'tool':'tools'} <span aria-hidden="true">↗</span></span></Link>}
 const logoIcons:Record<string,LucideIcon>={chatgpt:Command,claude:Sparkles,lovable:Heart,cursor:Code2,perplexity:Search,midjourney:Sailboat,runway:Bot,elevenlabs:AudioLines};
 export function ToolLogo({tool}:{tool:Tool}){const Icon=logoIcons[tool.slug];return <div className={`tool-logo logo-${tool.slug}`} aria-label={`${tool.name} avatar`}>{Icon?<Icon size={27} strokeWidth={1.8}/>:tool.name.charAt(0)}</div>}
-export function ToolCard({tool:t}:{tool:Tool}){return <article className="tool-card"><div className="tool-top"><ToolLogo tool={t}/><div><h3><Link to="/tool/$slug" params={{slug:t.slug}}>{t.name}</Link></h3><span className="tool-category">{getCategory(t.categories[0])?.name}</span></div></div><p className="tool-description">{t.short_description}</p><div className="tags">{t.tags.slice(0,3).map(tag=><span className="tag" key={tag}>{tag}</span>)}{t.open_source&&<span className="tag">Open source</span>}</div><div className="tool-bottom"><span className="pricing-badge">{t.platforms.filter(p=>p!=='Desktop').slice(0,3).join(' · ')}</span><Button variant="ghost" size="sm" asChild><Link className="tool-link" to="/tool/$slug" params={{slug:t.slug}}>View Tool<ArrowUpRight/></Link></Button></div></article>}
+export function ToolCard({tool:t}:{tool:Tool}){
+  const { isBookmarked, toggle } = useBookmarks();
+  const saved = isBookmarked(t.slug);
+  return (
+    <article className="tool-card">
+      <div className="tool-top">
+        <ToolLogo tool={t}/>
+        <div>
+          <h3><Link to="/tool/$slug" params={{slug:t.slug}}>{t.name}</Link></h3>
+          <span className="tool-category">{getCategory(t.categories[0])?.name}</span>
+        </div>
+        <button
+          className={`tool-bookmark${saved ? ' saved' : ''}`}
+          onClick={() => toggle(t.slug)}
+          aria-label={saved ? `Remove ${t.name} from bookmarks` : `Bookmark ${t.name}`}
+          title={saved ? 'Remove bookmark' : 'Bookmark'}
+        >
+          {saved ? <BookmarkCheck size={14}/> : <Bookmark size={14}/>}
+        </button>
+      </div>
+      <p className="tool-description">{t.short_description}</p>
+      <div className="tags">
+        {t.tags.slice(0,3).map(tag=><span className="tag" key={tag}>{tag}</span>)}
+        {t.open_source&&<span className="tag">Open source</span>}
+      </div>
+      <div className="tool-bottom">
+        <span className="pricing-badge">{t.platforms.filter(p=>p!=='Desktop').slice(0,3).join(' · ')}</span>
+        <Button variant="ghost" size="sm" asChild>
+          <Link className="tool-link" to="/tool/$slug" params={{slug:t.slug}}>View Tool<ArrowUpRight/></Link>
+        </Button>
+      </div>
+    </article>
+  );
+}
 export function ToolGrid({items}:{items:Tool[]}){return <div className="tool-grid">{items.map(t=><ToolCard key={t.id} tool={t}/>)}</div>}
 export function SectionHeading({eyebrow,title,description,link,label}:{eyebrow?:string;title:string;description?:string;link?:'discover'|'categories';label?:string}){return <div className="section-heading"><div>{eyebrow&&<div className="eyebrow">{eyebrow}</div>}<h2>{title}</h2>{description&&<p>{description}</p>}</div>{link&&<Link className="section-link" to={link==='discover'?'/discover':'/categories'}>{label??'View all'}<ArrowUpRight/></Link>}</div>}
 export function DemoNote(){return <p className="demo-note">Demo catalog · Pricing is never shown; platforms and history are reported details awaiting verification. Popularity order is illustrative. Confirm current details on each tool’s official website.</p>}

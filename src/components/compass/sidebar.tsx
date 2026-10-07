@@ -3,7 +3,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import {
   Compass, Home, Search, LayoutGrid, GitCompareArrows,
   Info, Sun, Moon, LogIn, LogOut, Lock, X, Menu, ShieldCheck,
-  Sparkles, Lightbulb, Send, User,
+  Sparkles, Lightbulb, Send, User, ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from './theme-provider';
@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { to: '/categories', label: 'Categories', icon: LayoutGrid,       protected: true },
   { to: '/compare',    label: 'Compare',    icon: GitCompareArrows, protected: true },
   { to: '/submit',     label: 'Submit Tool',icon: Send,             protected: true },
+  { to: '/changelog',  label: 'Changelog',  icon: ScrollText },
   { to: '/about',      label: 'About',      icon: Info },
 ];
 
