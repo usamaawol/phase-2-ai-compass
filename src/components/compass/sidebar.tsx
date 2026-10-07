@@ -1,30 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import {
-  Compass,
-  Home,
-  Search,
-  LayoutGrid,
-  GitCompareArrows,
-  Info,
-  Sun,
-  Moon,
-  LogIn,
-  LogOut,
-  Lock,
-  X,
-  Menu,
-  ShieldCheck,
+  Compass, Home, Search, LayoutGrid, GitCompareArrows,
+  Info, Sun, Moon, LogIn, LogOut, Lock, X, Menu, ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from './theme-provider';
 
-/* ─── nav items ──────────────────────────────────────────────── */
 interface NavItem {
   to: string;
   label: string;
   icon: React.ElementType;
-  /** Requires sign-in to visit */
   protected?: boolean;
 }
 
@@ -36,7 +23,7 @@ const NAV: NavItem[] = [
   { to: '/about',      label: 'About',      icon: Info },
 ];
 
-/* ─── Google SVG ─────────────────────────────────────────────── */
+/* ── Google SVG ─────────────────────────────────────────────── */
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
@@ -48,238 +35,173 @@ function GoogleIcon() {
   );
 }
 
-/* ─── login modal ────────────────────────────────────────────── */
+/* ── Login modal ─────────────────────────────────────────────── */
 function LoginModal({ onClose }: { onClose: () => void }) {
   const { signIn } = useAuth();
-  const [busy,  setBusy]  = useState(false);
+  const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
 
   async function handleGoogle() {
-    setBusy(true);
-    setError('');
-    try {
-      await signIn();
-      onClose();
-    } catch (e: unknown) {
-      // Translate Firebase error codes into plain language
+    setBusy(true); setError('');
+    try { await signIn(); onClose(); }
+    catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes('api-key-not-valid') || msg.includes('api-key-not-found')) {
-        setError('Firebase is not configured yet. Add your VITE_FIREBASE_* keys to the .env file and restart the dev server.');
-      } else if (msg.includes('popup-closed-by-user') || msg.includes('cancelled-popup-request')) {
-        setError('Sign-in was cancelled. Please try again.');
-      } else if (msg.includes('popup-blocked')) {
-        setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
-      } else if (msg.includes('network-request-failed')) {
-        setError('Network error. Check your internet connection and try again.');
-      } else {
+      if (msg.includes('api-key-not-valid') || msg.includes('api-key-not-found'))
+        setError('Firebase is not configured. Check VITE_FIREBASE_* environment variables.');
+      else if (msg.includes('popup-closed') || msg.includes('cancelled-popup'))
+        setError('Sign-in cancelled. Please try again.');
+      else if (msg.includes('popup-blocked'))
+        setError('Pop-up blocked. Allow pop-ups for this site and try again.');
+      else if (msg.includes('network-request-failed'))
+        setError('Network error. Check your connection and try again.');
+      else
         setError('Sign-in failed. Please try again.');
-      }
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   return (
-    /* clicking the backdrop closes the modal */
-    <div
-      className="login-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sign in to AI Compass"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <div className="login-overlay" role="dialog" aria-modal="true"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="login-card">
-        <button className="login-close" onClick={onClose} aria-label="Close sign-in dialog">
-          <X size={18} />
-        </button>
-
-        {/* Brand */}
-        <div className="login-brand">
-          <Compass size={28} strokeWidth={1.5} />
-          <span>AI Compass</span>
-        </div>
-
+        <button className="login-close" onClick={onClose} aria-label="Close"><X size={18}/></button>
+        <div className="login-brand"><Compass size={28} strokeWidth={1.5}/><span>AI Compass</span></div>
         <h2 className="login-title">Sign in to continue</h2>
-        <p className="login-subtitle">
-          Access Discover, Categories, and Compare.<br />
-          Free · No password needed.
-        </p>
-
-        <button
-          className="google-btn"
-          onClick={handleGoogle}
-          disabled={busy}
-        >
-          <GoogleIcon />
-          <span>{busy ? 'Signing in…' : 'Continue with Google'}</span>
+        <p className="login-subtitle">Access Discover, Categories, and Compare.<br/>Free · No password needed.</p>
+        <button className="google-btn" onClick={handleGoogle} disabled={busy}>
+          <GoogleIcon/><span>{busy ? 'Signing in…' : 'Continue with Google'}</span>
         </button>
-
         {error && <p className="login-error" role="alert">{error}</p>}
-
-        <p className="login-note">
-          By signing in you agree to our terms of service.<br />
-          Your data is never sold.
-        </p>
+        <p className="login-note">By signing in you agree to our terms. Your data is never sold.</p>
       </div>
     </div>
   );
 }
 
-/* ─── sidebar content (shared between desktop & mobile drawer) ─ */
-function SidebarContent({
-  onClose,
-  onLoginRequest,
-}: {
-  onClose: () => void;
-  onLoginRequest: () => void;
-}) {
+/* ── Nav content (shared desktop + mobile) ────────────────────── */
+function NavContent({ onClose, onLoginRequest }: { onClose: () => void; onLoginRequest: () => void }) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
 
-  function handleNavClick(e: React.MouseEvent, item: NavItem) {
-    if (item.protected && !user) {
-      e.preventDefault();
-      onLoginRequest();
-    }
-    onClose();
+  function handleClick(e: React.MouseEvent, item: NavItem) {
+    if (item.protected && !user) { e.preventDefault(); onLoginRequest(); }
+    else onClose();
   }
 
   return (
-    <>
-      {/* Brand / logo */}
-      <Link to="/" className="sidebar-brand" aria-label="AI Compass home" onClick={onClose}>
-        <Compass size={26} strokeWidth={1.5} />
-        <span className="sidebar-brand-text">
-          AI Compass<span className="sidebar-brand-dot">.</span>
-        </span>
+    <div className="nav-content">
+      {/* ── Brand ── */}
+      <Link to="/" className="nav-brand" onClick={onClose} aria-label="AI Compass home">
+        <div className="nav-brand-icon">
+          <Compass size={20} strokeWidth={1.6}/>
+        </div>
+        <div className="nav-brand-text">
+          <span className="nav-brand-name">AI Compass</span>
+          <span className="nav-brand-tag">Find the Right AI</span>
+        </div>
       </Link>
 
-      {/* Divider */}
-      <div className="sidebar-divider" />
+      {/* ── Separator ── */}
+      <div className="nav-sep"/>
 
-      {/* Nav links */}
-      <nav className="sidebar-nav" aria-label="Main navigation">
-        {NAV.map((item) => {
-          const Icon    = item.icon;
-          const active  = location.pathname === item.to
-                        || (item.to !== '/' && location.pathname.startsWith(item.to));
-          const locked  = !!item.protected && !user;
-
+      {/* ── Nav links ── */}
+      <nav className="nav-links-list" aria-label="Main navigation">
+        {NAV.map(item => {
+          const Icon   = item.icon;
+          const active = location.pathname === item.to
+                      || (item.to !== '/' && location.pathname.startsWith(item.to));
+          const locked = !!item.protected && !user;
           return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={['sidebar-link', active ? 'active' : '', locked ? 'locked' : ''].join(' ')}
-              onClick={(e) => handleNavClick(e, item)}
+            <Link key={item.to} to={item.to}
+              className={`nav-item${active ? ' nav-item-active' : ''}${locked ? ' nav-item-locked' : ''}`}
+              onClick={e => handleClick(e, item)}
               aria-current={active ? 'page' : undefined}
             >
-              <span className="sidebar-link-icon"><Icon size={17} strokeWidth={1.8} /></span>
-              <span className="sidebar-link-label">{item.label}</span>
-              {locked && (
-                <span className="sidebar-lock-icon" aria-label="Sign in required">
-                  <Lock size={11} />
-                </span>
-              )}
+              <span className="nav-item-icon-wrap">
+                <Icon size={17} strokeWidth={active ? 2.2 : 1.8}/>
+              </span>
+              <span className="nav-item-label">{item.label}</span>
+              {locked && <Lock size={10} className="nav-item-lock" aria-label="Requires sign-in"/>}
+              {active && <span className="nav-item-pip" aria-hidden="true"/>}
             </Link>
           );
         })}
       </nav>
 
-      {/* Push bottom section down */}
-      <div className="sidebar-spacer" />
+      <div className="nav-spacer"/>
 
-      {/* Bottom controls */}
-      <div className="sidebar-bottom">
-        {/* Theme toggle */}
-        <button
-          className="sidebar-action"
-          onClick={toggle}
-          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-        >
-          <span className="sidebar-link-icon">
-            {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-          </span>
+      {/* ── Bottom ── */}
+      <div className="nav-bottom">
+        {/* Theme */}
+        <button className="nav-bottom-btn" onClick={toggle}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+          {theme === 'light' ? <Moon size={15}/> : <Sun size={15}/>}
           <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
         </button>
 
         {/* Auth */}
         {user ? (
-          <div className="sidebar-user">
-            {user.photoURL
-              ? <img src={user.photoURL} alt="" className="sidebar-avatar" referrerPolicy="no-referrer" />
-              : <div className="sidebar-avatar-fallback">{(user.displayName ?? 'U')[0]}</div>
-            }
-            <div className="sidebar-user-info">
-              <span className="sidebar-user-name">{user.displayName ?? user.email ?? 'User'}</span>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link to="/admin" className="sidebar-admin-link" onClick={onClose}>
-                  <ShieldCheck size={11} /> Admin
-                </Link>
-                <button className="sidebar-signout" onClick={() => signOut()}>
-                  <LogOut size={11} />
-                  <span>Sign out</span>
-                </button>
+          <div className="nav-user">
+            <div className="nav-user-left">
+              {user.photoURL
+                ? <img src={user.photoURL} alt="" className="nav-avatar" referrerPolicy="no-referrer"/>
+                : <div className="nav-avatar-fallback"><Sparkles size={12}/></div>
+              }
+              <div className="nav-user-info">
+                <span className="nav-user-name">{user.displayName ?? user.email ?? 'User'}</span>
+                <div className="nav-user-actions">
+                  <Link to="/admin" className="nav-admin-link" onClick={onClose}>
+                    <ShieldCheck size={10}/> Admin
+                  </Link>
+                  <span className="nav-user-dot">·</span>
+                  <button className="nav-signout" onClick={() => signOut()}>
+                    <LogOut size={10}/> Sign out
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <button className="sidebar-action sidebar-signin" onClick={onLoginRequest}>
-            <span className="sidebar-link-icon"><LogIn size={17} /></span>
-            <span>Sign in</span>
+          <button className="nav-signin-btn" onClick={onLoginRequest}>
+            <LogIn size={15}/>
+            <span>Sign in with Google</span>
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
-/* ─── main export ────────────────────────────────────────────── */
+/* ── Main export ─────────────────────────────────────────────── */
 export function Sidebar() {
-  const [showLogin,   setShowLogin]   = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [showLogin,  setShowLogin]  = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
-      {/* ── Desktop sidebar ── */}
+      {/* Desktop sidebar */}
       <aside className="sidebar" aria-label="Site navigation">
-        <SidebarContent
-          onClose={() => {}}
-          onLoginRequest={() => setShowLogin(true)}
-        />
+        <NavContent onClose={() => {}} onLoginRequest={() => setShowLogin(true)}/>
       </aside>
 
-      {/* ── Mobile top bar ── */}
-      <div className="mobile-topbar">
-        <Link to="/" className="sidebar-brand mobile-brand" aria-label="AI Compass home">
-          <Compass size={22} strokeWidth={1.5} />
-          <span className="sidebar-brand-text">
-            AI Compass<span className="sidebar-brand-dot">.</span>
-          </span>
+      {/* Mobile top bar */}
+      <header className="mobile-topbar">
+        <Link to="/" className="mobile-topbar-brand" aria-label="AI Compass home">
+          <Compass size={20} strokeWidth={1.6}/>
+          <span>AI Compass<span className="nav-brand-dot">.</span></span>
         </Link>
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileOpen(v => !v)}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        <button className="mobile-hamburger" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileOpen} onClick={() => setMobileOpen(v => !v)}>
+          {mobileOpen ? <X size={20}/> : <Menu size={20}/>}
         </button>
-      </div>
+      </header>
 
-      {/* ── Mobile drawer ── */}
+      {/* Mobile drawer */}
       {mobileOpen && (
-        <div
-          className="mobile-backdrop"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        >
-          <aside
-            className="mobile-drawer"
-            aria-label="Mobile navigation"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SidebarContent
+        <div className="mobile-backdrop" aria-hidden="true" onClick={() => setMobileOpen(false)}>
+          <aside className="mobile-drawer" aria-label="Mobile navigation"
+            onClick={e => e.stopPropagation()}>
+            <NavContent
               onClose={() => setMobileOpen(false)}
               onLoginRequest={() => { setMobileOpen(false); setShowLogin(true); }}
             />
@@ -287,8 +209,7 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* ── Login modal ── */}
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)}/>}
     </>
   );
 }

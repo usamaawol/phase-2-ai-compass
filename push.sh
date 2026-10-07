@@ -2,76 +2,55 @@
 LOG="/home/usama/Downloads/phase-2-ai-compass-main/push.log"
 exec > "$LOG" 2>&1
 set -e
-
 cd /home/usama/Downloads/phase-2-ai-compass-main
-
 git config user.email "kiro@aicompass.app"
 git config user.name "Kiro"
-git remote set-url origin https://github.com/usamaawol/phase-2-ai-compass.git
 
-echo "=== Current branch ==="
-git branch --show-current
+echo "=== Remove .env from git tracking (keep the file locally) ==="
+git rm --cached .env 2>/dev/null || echo ".env was not tracked"
 
-echo "=== Staging all changes ==="
+echo "=== Stage all changes ==="
 git add -A
 
-echo "=== Staged files ==="
+echo "=== Changed files ==="
 git diff --cached --name-only
 
-echo "=== Committing ==="
+echo "=== Commit ==="
 if git diff --cached --quiet; then
-  echo "Nothing to commit — working tree clean."
+  echo "Nothing to commit."
 else
-  git commit -m "feat: admin dashboard, Firebase rules, SEO, performance
+  git commit -m "fix: redesigned sidebar, fixed mobile, removed .env from git, Vercel config
 
-Admin panel (/admin):
-- AdminLayout with auth guard (blocks non-admins, redirects unauthenticated)
-- Dashboard with stat cards (tools, published, drafts, needs review, subs)
-- AI Tools list with search, filter by status, inline actions (publish, verify,
-  feature, trend, archive, delete)
-- Add tool form + Edit tool form (ToolForm covers all 30+ fields)
-- Categories page with inline add/edit/delete
-- Tags page with add/delete chip UI
-- Featured tools page with drag-order (up/down arrows)
-- Submissions page with preview modal, approve, reject
-- Settings page (tagline, announcement banner, submissions toggle)
-- Admin link shown in public sidebar for signed-in users
+Sidebar redesign:
+- Brand shows icon with primary-color background + glow, name + tagline
+- Nav items have icon wrapper, hover slide effect, active right-edge pip
+- Active items highlighted with primary tint background
+- Sign-in button styled with primary border/glow, hover lift
+- User chip shows Google avatar with primary border ring
+- Smooth drawer animation with spring cubic-bezier
+- Mobile drawer width 260px, blurred backdrop
 
-Routing:
-- Fixed __root.tsx to skip public sidebar+footer for /admin routes
-- Fixed routeTree.gen.ts _addFileChildren (object not array)
-- All admin routes registered and typed
+Mobile fixes:
+- Removed 0px sidebar width on mobile so page-area fills full screen
+- Mobile topbar height 56px, sticky, subtle shadow
+- Hero h1 scales down to 38px on mobile (was overflowing)
+- Hamburger button has proper hover state
+- shell padding reduced on mobile for more content space
 
-Firebase Security Rules:
-- firebase.rules — Firestore rules for tools, categories, tags,
-  admin_users, users/bookmarks, tool_submissions, site_settings
-- firebase.storage.rules — Storage rules for tool logos and avatars
-- firebase.json — Firebase hosting + rules deploy config
-- firebase.indexes.json — empty indexes scaffold
-- .env.example — safe template (real .env now gitignored)
+Firebase on Vercel:
+- .env removed from git tracking (still exists locally)
+- .gitignore already blocks future .env commits
+- vercel.json created with rewrites, caching headers, build config
+- Add VITE_FIREBASE_* vars in Vercel dashboard → Settings → Environment Variables
 
-Security:
-- Added .env to .gitignore (prevents committing real API keys)
-- Added .env.example as safe reference template
-
-SEO:
-- dns-prefetch added for Google Fonts origins
-- Reduced Geist font weights to only those used (400,500,550,600,650,700)
-
-Performance (vite.config.ts):
-- manualChunks: vendor-react, vendor-router, vendor-radix, vendor-icons,
-  vendor-firebase split for better long-term caching
-- chunkSizeWarningLimit raised to 800kb
-
-UI:
-- Admin link (shield icon) shown next to user name in public sidebar
-- sidebar.tsx imports ShieldCheck icon for admin navigation"
+Style cleanup:
+- Complete styles.css rewrite with all sections consolidated
+- Old sidebar CSS classes replaced with new nav-* classes
+- Admin CSS fully preserved"
 fi
 
-echo "=== Pushing to origin/main ==="
+echo "=== Push ==="
 git push origin main
 
-echo "=== Final log ==="
-git log --oneline -5
-
-echo "=== DONE ==="
+echo "=== Done ==="
+git log --oneline -4
