@@ -67,9 +67,14 @@ function Home() {
         <div className="find-inner">
           <div className="eyebrow"><Compass size={15} />A LITTLE DIRECTION GOES A LONG WAY</div>
           <h2>Not sure which AI you need?</h2>
-          <p>Start with what you're trying to accomplish.<br />Your next creative partner might be one search away.</p>
+          <p>Describe what you want to do and we'll match you with the right tools.<br />Transparent matching — no black box.</p>
           <SearchBox placeholder="I want to..." />
           <TaskChips />
+          <div style={{ marginTop: 16 }}>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/find">Try the full AI finder <ArrowUpRight size={13}/></Link>
+            </Button>
+          </div>
         </div>
       </section>
       <section className="section shell" aria-label="Why AI Compass">

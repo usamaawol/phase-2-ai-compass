@@ -592,3 +592,148 @@
   .find-grid-3 { grid-template-columns: 1fr; }
   .find-grid-1 { max-width: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COMPARE PAGE
+═══════════════════════════════════════════════════════════ */
+.cmp-selector {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 28px;
+  padding: 16px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.cmp-selected-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 6px 8px; border-radius: 8px;
+  background: var(--secondary); border: 1px solid var(--border);
+}
+.cmp-chip-name { font-size: 13px; font-weight: 600; color: var(--foreground); }
+.cmp-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 4px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--muted-foreground); transition: color .15s, background .15s;
+}
+.cmp-chip-remove:hover { color: var(--destructive); background: var(--accent); }
+.cmp-clear {
+  margin-left: auto; font-size: 11px; color: var(--muted-foreground);
+  background: transparent; border: none; cursor: pointer; padding: 4px 8px;
+  transition: color .15s;
+}
+.cmp-clear:hover { color: var(--destructive); }
+
+/* Picker */
+.cmp-picker { position: relative; }
+.cmp-add-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 8px;
+  border: 1px dashed var(--border); background: transparent;
+  color: var(--muted-foreground); font-size: 13px; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.cmp-add-btn:hover { border-color: var(--primary); color: var(--primary); }
+.cmp-picker-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  width: 280px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 32px oklch(0 0 0 / .25); z-index: 30;
+  overflow: hidden;
+}
+.cmp-picker-search {
+  width: 100%; padding: 10px 14px; border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--secondary); color: var(--foreground); font-size: 13px;
+  box-sizing: border-box;
+}
+.cmp-picker-search:focus { outline: none; }
+.cmp-picker-list { max-height: 280px; overflow-y: auto; }
+.cmp-picker-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 14px; text-align: left;
+  background: transparent; border: none; cursor: pointer;
+  transition: background .13s;
+}
+.cmp-picker-item:hover { background: var(--secondary); }
+.cmp-picker-item .tool-logo { width: 30px; height: 30px; font-size: 14px; flex-shrink: 0; }
+.cmp-picker-name { font-size: 13px; font-weight: 600; color: var(--foreground); }
+.cmp-picker-cat  { font-size: 11px; color: var(--muted-foreground); }
+.cmp-picker-empty { padding: 16px; text-align: center; color: var(--muted-foreground); font-size: 12px; }
+
+/* Empty state */
+.cmp-empty { padding: 40px 0; }
+.cmp-empty p { color: var(--muted-foreground); margin-bottom: 16px; }
+.cmp-quick-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.cmp-quick-btn {
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 20px;
+  background: var(--secondary); color: var(--muted-foreground); font-size: 12px;
+  cursor: pointer; transition: all .15s;
+}
+.cmp-quick-btn:hover { border-color: var(--primary); color: var(--foreground); }
+
+/* Summary */
+.cmp-summary {
+  background: oklch(from var(--primary) l c h / .07);
+  border: 1px solid oklch(from var(--primary) l c h / .2);
+  border-radius: 10px; padding: 14px 18px;
+  font-size: 13px; color: var(--muted-foreground);
+  line-height: 1.6; margin-bottom: 20px;
+}
+.cmp-summary strong { color: var(--foreground); }
+
+/* Table */
+.cmp-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cmp-table thead tr { border-bottom: 1px solid var(--border); }
+.cmp-row-label {
+  padding: 11px 16px; font-size: 11px; font-weight: 600;
+  color: var(--muted-foreground); white-space: nowrap;
+  background: var(--secondary); min-width: 120px; vertical-align: middle;
+}
+.cmp-tool-header {
+  padding: 16px 20px 14px; text-align: left;
+  min-width: 200px; background: var(--card); vertical-align: top;
+  border-left: 1px solid var(--border);
+}
+.cmp-tool-head-inner { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.cmp-tool-head-inner .tool-logo { width: 36px; height: 36px; font-size: 18px; flex-shrink: 0; }
+.cmp-tool-head-name {
+  font-size: 14px; font-weight: 700; color: var(--foreground);
+  text-decoration: none; display: block; line-height: 1.2;
+}
+.cmp-tool-head-name:hover { color: var(--primary); }
+.cmp-tool-head-co { font-size: 11px; color: var(--muted-foreground); margin-top: 2px; }
+.cmp-tool-remove {
+  margin-left: auto; width: 22px; height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 5px; border: none; background: transparent;
+  color: var(--muted-foreground); cursor: pointer; transition: all .15s;
+}
+.cmp-tool-remove:hover { background: var(--secondary); color: var(--destructive); }
+.cmp-tool-desc { font-size: 11px; color: var(--muted-foreground); line-height: 1.5; margin: 0 0 6px; }
+.cmp-official {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--primary); text-decoration: none;
+}
+.cmp-official:hover { opacity: .75; }
+.cmp-cell {
+  padding: 10px 20px; vertical-align: middle;
+  border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+  color: var(--foreground); font-size: 12px;
+}
+.cmp-no { color: var(--muted-foreground); opacity: .4; }
+.cmp-section-header td {
+  padding: 8px 16px; font-size: 10px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted-foreground); background: var(--secondary);
+  border-top: 1px solid var(--border);
+}
+.cmp-hint {
+  color: var(--muted-foreground); font-size: 13px; padding: 24px 0;
+}
+
+@media (max-width: 700px) {
+  .cmp-selector { gap: 8px; }
+  .cmp-table-wrap { margin-inline: -4px; }
+  .cmp-tool-header, .cmp-cell { min-width: 140px; padding: 10px 12px; }
+  .cmp-row-label { min-width: 90px; padding: 10px 10px; }
+}

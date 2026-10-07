@@ -7,7 +7,33 @@ import { categories, getCategory, taskPresets, type Category, type Tool } from '
 export function Brand(){return <Link to="/" className="brand" aria-label="AI Compass home"><Compass strokeWidth={1.6}/><span>AI Compass<span className="text-primary">.</span></span></Link>}
 export function Navigation(){const [open,setOpen]=useState(false);return <header className="site-header"><div className="shell header-inner"><Brand/><nav aria-label="Main navigation" className="nav-links"><NavLinks/></nav><div className="header-actions"><ThemeToggle/><Button variant="ghost" size="icon" className="search-nav" asChild><Link to="/discover" aria-label="Search AI tools" title="Search AI tools"><Search/></Link></Button><Button asChild className="explore-nav"><Link to="/discover">Explore AI <ArrowUpRight/></Link></Button><Button variant="ghost" size="icon" className="mobile-menu-button" aria-label={open?'Close menu':'Open menu'} aria-expanded={open} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</Button></div></div>{open&&<nav className="mobile-nav" aria-label="Mobile navigation" onClick={()=>setOpen(false)}><NavLinks/></nav>}</header>}
 function NavLinks(){return <><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/discover">Discover</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/categories">Categories</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/compare">Compare</Link><Link className="nav-link" activeProps={{className:'nav-link active'}} to="/about">About</Link></>}
-export function Footer(){return <footer className="footer"><div className="shell"><div className="footer-top"><div><Brand/><p className="footer-tagline">Find the Right AI for the Job.</p></div><nav className="nav-links" aria-label="Footer navigation"><NavLinks/></nav></div><div className="footer-bottom"><span>© 2026 AI Compass. All rights reserved.</span><span>A little direction. A world of possibility.</span></div></div></footer>}
+export function Footer(){
+  return (
+    <footer className="footer">
+      <div className="shell">
+        <div className="footer-top">
+          <div>
+            <Link to="/" className="brand" aria-label="AI Compass home">
+              <Compass strokeWidth={1.6}/><span>AI Compass<span className="text-primary">.</span></span>
+            </Link>
+            <p className="footer-tagline">Find the Right AI for the Job.</p>
+          </div>
+          <nav aria-label="Footer navigation" style={{display:'flex',gap:28,flexWrap:'wrap',alignItems:'center'}}>
+            <Link className="nav-link" to="/discover">Discover</Link>
+            <Link className="nav-link" to="/find">Find my AI</Link>
+            <Link className="nav-link" to="/categories">Categories</Link>
+            <Link className="nav-link" to="/compare">Compare</Link>
+            <Link className="nav-link" to="/about">About</Link>
+          </nav>
+        </div>
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} AI Compass. All rights reserved.</span>
+          <span>Find the right AI. For the job.</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
 export function SearchBox({placeholder='What do you want to do?',className='',value,onChange}:{placeholder?:string;className?:string;value?:string;onChange?:(q:string)=>void}){const [query,setQuery]=useState('');const navigate=useNavigate();function submit(e:FormEvent){e.preventDefault();if(onChange){onChange(value??'');return}const text=query.trim().toLowerCase();const preset=taskPresets.find(t=>t.label.toLowerCase()===text);navigate({to:'/discover',search:preset?{category:preset.category}:{q:query.trim()}})}return <form onSubmit={submit} className={`search-form ${className}`} role="search"><Search className="search-icon"/><input aria-label="Search AI tools" placeholder={placeholder} value={value??query} onChange={e=>onChange?onChange(e.target.value):setQuery(e.target.value)}/><Button type="submit" className="search-submit"><span className="search-button-text">Find my AI</span><ArrowRight/></Button></form>}
 export function TaskChips({all=false}:{all?:boolean}){return <div className="task-row"><span className="task-label">TRY THIS</span>{taskPresets.slice(0,all?7:4).map(t=><Button key={t.label} variant="ghost" className="task-chip" asChild><Link to="/discover" search={{category:t.category}}>{t.label}<ArrowUpRight className="!size-3"/></Link></Button>)}</div>}
 export function CategoryCard({category:c}:{category:Category}){const Icon=c.icon;return <Link to="/category/$slug" params={{slug:c.slug}} className="category-card"><div className="category-top"><Icon className="category-icon" strokeWidth={1.6}/><ArrowUpRight className="category-arrow"/></div><h3>{c.name}</h3><p>{c.description}</p><span className="category-count">{c.tool_count} {c.tool_count===1?'tool':'tools'} <span aria-hidden="true">↗</span></span></Link>}
