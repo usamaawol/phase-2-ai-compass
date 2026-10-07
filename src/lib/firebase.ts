@@ -16,9 +16,9 @@ const firebaseConfig = {
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     ?? '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '',
   appId:             import.meta.env.VITE_FIREBASE_APP_ID             ?? '',
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID     ?? '',
 };
 
-// Guard: don't crash if env vars are missing (dev without Firebase configured)
 let app: FirebaseApp;
 let auth: Auth;
 
@@ -26,8 +26,7 @@ try {
   app  = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
   auth = getAuth(app);
 } catch (e) {
-  console.warn('[AI Compass] Firebase not configured. Add VITE_FIREBASE_* env vars to enable auth.', e);
-  // Provide a stub so imports don't crash
+  console.warn('[AI Compass] Firebase init failed. Check VITE_FIREBASE_* env vars.', e);
   auth = {} as Auth;
 }
 

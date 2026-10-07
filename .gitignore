@@ -16,6 +16,13 @@ dist-ssr
 .nitro
 *.local
 
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.*.local
+# Keep the example template
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
@@ -30,3 +37,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temp files from Kiro tooling
+fix-branches.log
+fix-branches.sh
+push.sh
+push.log

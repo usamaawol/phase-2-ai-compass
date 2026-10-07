@@ -14,6 +14,7 @@ import {
   Lock,
   X,
   Menu,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from './theme-provider';
@@ -60,7 +61,19 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       await signIn();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Sign-in failed. Please try again.');
+      // Translate Firebase error codes into plain language
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('api-key-not-valid') || msg.includes('api-key-not-found')) {
+        setError('Firebase is not configured yet. Add your VITE_FIREBASE_* keys to the .env file and restart the dev server.');
+      } else if (msg.includes('popup-closed-by-user') || msg.includes('cancelled-popup-request')) {
+        setError('Sign-in was cancelled. Please try again.');
+      } else if (msg.includes('popup-blocked')) {
+        setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
+      } else if (msg.includes('network-request-failed')) {
+        setError('Network error. Check your internet connection and try again.');
+      } else {
+        setError('Sign-in failed. Please try again.');
+      }
     } finally {
       setBusy(false);
     }
@@ -199,10 +212,15 @@ function SidebarContent({
             }
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user.displayName ?? user.email ?? 'User'}</span>
-              <button className="sidebar-signout" onClick={() => signOut()}>
-                <LogOut size={11} />
-                <span>Sign out</span>
-              </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Link to="/admin" className="sidebar-admin-link" onClick={onClose}>
+                  <ShieldCheck size={11} /> Admin
+                </Link>
+                <button className="sidebar-signout" onClick={() => signOut()}>
+                  <LogOut size={11} />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (

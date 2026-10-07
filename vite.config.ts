@@ -3,13 +3,43 @@
 //   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
 //     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    build: {
+      // Raise chunk warning threshold (admin panel is intentionally large)
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          // Split vendor libraries into separate chunks for better caching
+          manualChunks: {
+            // Core React runtime — changes rarely
+            "vendor-react": ["react", "react-dom"],
+            // Router — changes with app upgrades
+            "vendor-router": [
+              "@tanstack/react-router",
+              "@tanstack/react-start",
+              "@tanstack/react-query",
+            ],
+            // Radix UI primitives — changes rarely
+            "vendor-radix": [
+              "@radix-ui/react-dialog",
+              "@radix-ui/react-dropdown-menu",
+              "@radix-ui/react-select",
+              "@radix-ui/react-tooltip",
+              "@radix-ui/react-tabs",
+            ],
+            // Icons — large but static
+            "vendor-icons": ["lucide-react"],
+            // Firebase — lazy-loaded but chunk it separately
+            "vendor-firebase": ["firebase"],
+          },
+        },
+      },
+    },
   },
 });

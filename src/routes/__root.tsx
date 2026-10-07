@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useRouter, useLocation, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
@@ -63,9 +63,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet",  href: appCss },
       { rel: "icon",        href: "/favicon.svg", type: "image/svg+xml" },
+      /* DNS prefetch speeds up third-party origin lookups */
+      { rel: "dns-prefetch", href: "https://fonts.googleapis.com" },
+      { rel: "dns-prefetch", href: "https://fonts.gstatic.com" },
       { rel: "preconnect",  href: "https://fonts.googleapis.com" },
       { rel: "preconnect",  href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet",  href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;550;600;650;700&display=swap" },
+      /* Only load the weights we actually use */
+      { rel: "stylesheet",  href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;550;600;650;700&display=swap&text=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%20.,!?-_/:()%27%22" },
     ],
     scripts: [{
       type: "application/ld+json",
@@ -99,15 +103,33 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <div className="app-layout">
-            <Sidebar />
-            <div className="page-area">
-              <main><Outlet /></main>
-              <Footer />
-            </div>
-          </div>
+          <AppShell />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
 }
+
+/** Renders the public sidebar+footer layout OR passes through raw for /admin */
+function AppShell() {
+  const location = useLocation();
+  const isAdmin  = location.pathname.startsWith('/admin');
+
+  if (isAdmin) {
+    return <Outlet />;
+  }
+
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <div className="page-area">
+        <main><Outlet /></main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+
+
+

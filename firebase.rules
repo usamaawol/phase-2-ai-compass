@@ -1,0 +1,134 @@
+// ============================================================
+// Firebase Security Rules — AI Compass
+// Project: aicompass-f1ada
+//
+// HOW TO DEPLOY:
+//   firebase deploy --only firestore:rules
+//   (requires firebase-tools: npm install -g firebase-tools)
+//
+// STORAGE RULES: see firebase.storage.rules
+// ============================================================
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Admin role is stored in /admin_users/{uid}
+    // Assign with: db.collection('admin_users').doc(uid).set({ role: 'admin' })
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admin_users/$(request.auth.uid));
+    }
+
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidUrl(val) {
+      return val is string && (val.matches('https://.*') || val == '');
+    }
+
+    // ── Public catalog tools ───────────────────────────────────
+    // Anyone can read published tools.
+    // Only admins can create, update, or delete.
+    match /tools/{toolId} {
+      allow read: if resource.data.status == 'published'
+                    || isAdmin();
+      allow create: if isAdmin()
+                    && isValidString(request.resource.data.name, 200)
+                    && isValidUrl(request.resource.data.official_url);
+      allow update: if isAdmin()
+                    && isValidString(request.resource.data.name, 200)
+                    && isValidUrl(request.resource.data.official_url);
+      allow delete: if isAdmin(); // prefer archive (status=archived) over hard delete
+    }
+
+    // ── Categories ──────────────────────────────────────────────
+    // Public read. Admin write.
+    match /categories/{catId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ── Tags ────────────────────────────────────────────────────
+    // Public read. Admin write.
+    match /tags/{tagId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ── Admin users registry ────────────────────────────────────
+    // Only readable/writable by existing admins.
+    // Initial admin must be set via Firebase console or server SDK.
+    match /admin_users/{uid} {
+      allow read:   if isAdmin();
+      allow write:  if isAdmin(); // existing admin can grant/revoke
+    }
+
+    // ── User profiles ───────────────────────────────────────────
+    // Each user can read/write their own profile only.
+    match /users/{uid} {
+      allow read:   if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+                    && request.resource.data.keys().hasOnly(
+                        ['uid','email','displayName','photoURL','bio','createdAt','updatedAt','lastLoginAt']
+                      )
+                    && isValidString(request.resource.data.displayName, 100);
+      allow update: if isOwner(uid)
+                    && request.resource.data.uid == uid  // can't change uid
+                    && isValidString(request.resource.data.displayName, 100)
+                    && (!('bio' in request.resource.data)
+                        || isValidString(request.resource.data.bio, 500));
+      allow delete: if isOwner(uid) || isAdmin();
+
+      // Bookmarks subcollection — each user owns their own bookmarks
+      match /bookmarks/{toolId} {
+        allow read:   if isOwner(uid);
+        allow create: if isOwner(uid)
+                      && request.resource.data.keys().hasOnly(['toolId','createdAt'])
+                      && request.resource.data.toolId == toolId;
+        allow delete: if isOwner(uid);
+        allow update: if false; // bookmarks are create/delete only
+      }
+    }
+
+    // ── Tool submissions ────────────────────────────────────────
+    // Signed-in users can create and read their own submissions.
+    // Admins can read all and update status/review_note.
+    match /tool_submissions/{subId} {
+      allow read:   if isOwner(resource.data.user_id) || isAdmin();
+      allow create: if isSignedIn()
+                    && request.resource.data.user_id == request.auth.uid
+                    && request.resource.data.status  == 'pending'
+                    && isValidString(request.resource.data.data.name, 200)
+                    && isValidUrl(request.resource.data.data.official_url);
+      allow update: if isAdmin()
+                    && request.resource.data.user_id == resource.data.user_id // can't reassign
+                    && request.resource.data.data    == resource.data.data;    // admin can't change submitted data, only status
+      allow delete: if isAdmin();
+    }
+
+    // ── Site settings ───────────────────────────────────────────
+    // Public read (for tagline, announcement banner).
+    // Admin write only.
+    match /site_settings/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Deny everything else ────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

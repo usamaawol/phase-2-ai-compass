@@ -1,0 +1,44 @@
+// ============================================================
+// Firebase Storage Security Rules — AI Compass
+// Deploy: firebase deploy --only storage
+// ============================================================
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && firestore.exists(
+            /databases/(default)/documents/admin_users/$(request.auth.uid)
+          );
+    }
+
+    // ── Tool logos / images (admin upload only) ─────────────────
+    match /tools/{toolId}/{filename} {
+      allow read:   if true;           // public
+      allow write:  if isAdmin()
+                    && request.resource.size  < 2 * 1024 * 1024  // max 2 MB
+                    && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── User avatars ────────────────────────────────────────────
+    match /avatars/{uid}/{filename} {
+      allow read:   if true;
+      allow write:  if isSignedIn()
+                    && request.auth.uid == uid
+                    && request.resource.size < 1 * 1024 * 1024  // max 1 MB
+                    && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Deny everything else ────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
