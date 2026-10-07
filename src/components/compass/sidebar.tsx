@@ -3,7 +3,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import {
   Compass, Home, Search, LayoutGrid, GitCompareArrows,
   Info, Sun, Moon, LogIn, LogOut, Lock, X, Menu, ShieldCheck,
-  Sparkles,
+  Sparkles, Lightbulb,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from './theme-provider';
@@ -18,6 +18,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/',           label: 'Home',       icon: Home },
   { to: '/discover',   label: 'Discover',   icon: Search,           protected: true },
+  { to: '/find',       label: 'Find my AI', icon: Lightbulb,        protected: true },
   { to: '/categories', label: 'Categories', icon: LayoutGrid,       protected: true },
   { to: '/compare',    label: 'Compare',    icon: GitCompareArrows, protected: true },
   { to: '/about',      label: 'About',      icon: Info },

@@ -10,6 +10,7 @@ import { Route as AboutRouteImport }             from './routes/about'
 import { Route as CategoriesRouteImport }        from './routes/categories'
 import { Route as CompareRouteImport }           from './routes/compare'
 import { Route as DiscoverRouteImport }          from './routes/discover'
+import { Route as FindRouteImport }              from './routes/find'
 import { Route as CategorySlugRouteImport }      from './routes/category.$slug'
 import { Route as ToolSlugRouteImport }          from './routes/tool.$slug'
 import { Route as AdminRouteImport }             from './routes/admin'
@@ -35,6 +36,9 @@ const CategoriesRoute = CategoriesRouteImport.update({
 } as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare', path: '/compare', getParentRoute: () => rootRouteImport,
+} as any)
+const FindRoute = FindRouteImport.update({
+  id: '/find', path: '/find', getParentRoute: () => rootRouteImport,
 } as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover', path: '/discover', getParentRoute: () => rootRouteImport,
@@ -80,56 +84,59 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
 
 /* ── Type declarations ───────────────────────────────────────── */
 export interface FileRoutesByFullPath {
-  '/':                    typeof IndexRoute
-  '/about':               typeof AboutRoute
-  '/categories':          typeof CategoriesRoute
-  '/compare':             typeof CompareRoute
-  '/discover':            typeof DiscoverRoute
-  '/category/$slug':      typeof CategorySlugRoute
-  '/tool/$slug':          typeof ToolSlugRoute
-  '/admin':               typeof AdminRoute
-  '/admin/':              typeof AdminIndexRoute
-  '/admin/tools':         typeof AdminToolsRoute
-  '/admin/tools/new':     typeof AdminToolsNewRoute
+  '/':                       typeof IndexRoute
+  '/about':                  typeof AboutRoute
+  '/categories':             typeof CategoriesRoute
+  '/compare':                typeof CompareRoute
+  '/find':                   typeof FindRoute
+  '/discover':               typeof DiscoverRoute
+  '/category/$slug':         typeof CategorySlugRoute
+  '/tool/$slug':             typeof ToolSlugRoute
+  '/admin':                  typeof AdminRoute
+  '/admin/':                 typeof AdminIndexRoute
+  '/admin/tools':            typeof AdminToolsRoute
+  '/admin/tools/new':        typeof AdminToolsNewRoute
   '/admin/tools/$slug/edit': typeof AdminToolsEditRoute
-  '/admin/categories':    typeof AdminCategoriesRoute
-  '/admin/tags':          typeof AdminTagsRoute
-  '/admin/featured':      typeof AdminFeaturedRoute
-  '/admin/submissions':   typeof AdminSubmissionsRoute
-  '/admin/settings':      typeof AdminSettingsRoute
+  '/admin/categories':       typeof AdminCategoriesRoute
+  '/admin/tags':             typeof AdminTagsRoute
+  '/admin/featured':         typeof AdminFeaturedRoute
+  '/admin/submissions':      typeof AdminSubmissionsRoute
+  '/admin/settings':         typeof AdminSettingsRoute
 }
 export interface FileRoutesByTo extends FileRoutesByFullPath {}
 export interface FileRoutesById {
-  __root__:                typeof rootRouteImport
-  '/':                     typeof IndexRoute
-  '/about':                typeof AboutRoute
-  '/categories':           typeof CategoriesRoute
-  '/compare':              typeof CompareRoute
-  '/discover':             typeof DiscoverRoute
-  '/category/$slug':       typeof CategorySlugRoute
-  '/tool/$slug':           typeof ToolSlugRoute
-  '/admin':                typeof AdminRoute
-  '/admin/':               typeof AdminIndexRoute
-  '/admin/tools':          typeof AdminToolsRoute
-  '/admin/tools/new':      typeof AdminToolsNewRoute
+  __root__:                  typeof rootRouteImport
+  '/':                       typeof IndexRoute
+  '/about':                  typeof AboutRoute
+  '/categories':             typeof CategoriesRoute
+  '/compare':                typeof CompareRoute
+  '/find':                   typeof FindRoute
+  '/discover':               typeof DiscoverRoute
+  '/category/$slug':         typeof CategorySlugRoute
+  '/tool/$slug':             typeof ToolSlugRoute
+  '/admin':                  typeof AdminRoute
+  '/admin/':                 typeof AdminIndexRoute
+  '/admin/tools':            typeof AdminToolsRoute
+  '/admin/tools/new':        typeof AdminToolsNewRoute
   '/admin/tools/$slug/edit': typeof AdminToolsEditRoute
-  '/admin/categories':     typeof AdminCategoriesRoute
-  '/admin/tags':           typeof AdminTagsRoute
-  '/admin/featured':       typeof AdminFeaturedRoute
-  '/admin/submissions':    typeof AdminSubmissionsRoute
-  '/admin/settings':       typeof AdminSettingsRoute
+  '/admin/categories':       typeof AdminCategoriesRoute
+  '/admin/tags':             typeof AdminTagsRoute
+  '/admin/featured':         typeof AdminFeaturedRoute
+  '/admin/submissions':      typeof AdminSubmissionsRoute
+  '/admin/settings':         typeof AdminSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/':                { id:'/'; path:'/'; fullPath:'/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
-    '/about':           { id:'/about'; path:'/about'; fullPath:'/about'; preLoaderRoute: typeof AboutRouteImport; parentRoute: typeof rootRouteImport }
-    '/categories':      { id:'/categories'; path:'/categories'; fullPath:'/categories'; preLoaderRoute: typeof CategoriesRouteImport; parentRoute: typeof rootRouteImport }
-    '/compare':         { id:'/compare'; path:'/compare'; fullPath:'/compare'; preLoaderRoute: typeof CompareRouteImport; parentRoute: typeof rootRouteImport }
-    '/discover':        { id:'/discover'; path:'/discover'; fullPath:'/discover'; preLoaderRoute: typeof DiscoverRouteImport; parentRoute: typeof rootRouteImport }
-    '/category/$slug':  { id:'/category/$slug'; path:'/category/$slug'; fullPath:'/category/$slug'; preLoaderRoute: typeof CategorySlugRouteImport; parentRoute: typeof rootRouteImport }
-    '/tool/$slug':      { id:'/tool/$slug'; path:'/tool/$slug'; fullPath:'/tool/$slug'; preLoaderRoute: typeof ToolSlugRouteImport; parentRoute: typeof rootRouteImport }
-    '/admin':           { id:'/admin'; path:'/admin'; fullPath:'/admin'; preLoaderRoute: typeof AdminRouteImport; parentRoute: typeof rootRouteImport }
+    '/':               { id:'/'; path:'/'; fullPath:'/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
+    '/about':          { id:'/about'; path:'/about'; fullPath:'/about'; preLoaderRoute: typeof AboutRouteImport; parentRoute: typeof rootRouteImport }
+    '/categories':     { id:'/categories'; path:'/categories'; fullPath:'/categories'; preLoaderRoute: typeof CategoriesRouteImport; parentRoute: typeof rootRouteImport }
+    '/compare':        { id:'/compare'; path:'/compare'; fullPath:'/compare'; preLoaderRoute: typeof CompareRouteImport; parentRoute: typeof rootRouteImport }
+    '/find':           { id:'/find'; path:'/find'; fullPath:'/find'; preLoaderRoute: typeof FindRouteImport; parentRoute: typeof rootRouteImport }
+    '/discover':       { id:'/discover'; path:'/discover'; fullPath:'/discover'; preLoaderRoute: typeof DiscoverRouteImport; parentRoute: typeof rootRouteImport }
+    '/category/$slug': { id:'/category/$slug'; path:'/category/$slug'; fullPath:'/category/$slug'; preLoaderRoute: typeof CategorySlugRouteImport; parentRoute: typeof rootRouteImport }
+    '/tool/$slug':     { id:'/tool/$slug'; path:'/tool/$slug'; fullPath:'/tool/$slug'; preLoaderRoute: typeof ToolSlugRouteImport; parentRoute: typeof rootRouteImport }
+    '/admin':          { id:'/admin'; path:'/admin'; fullPath:'/admin'; preLoaderRoute: typeof AdminRouteImport; parentRoute: typeof rootRouteImport }
   }
 }
 
@@ -153,6 +160,7 @@ const rootRouteChildren = {
   AboutRoute,
   CategoriesRoute,
   CompareRoute,
+  FindRoute,
   DiscoverRoute,
   CategorySlugRoute,
   ToolSlugRoute,
