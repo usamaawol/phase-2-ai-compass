@@ -21,3 +21,6 @@
 .light .logo-claude,.light .logo-midjourney,.light .logo-elevenlabs,.light .logo-suno{color:oklch(.23 .012 150)}
 @media(max-width:700px){.light .hero-shade{background:linear-gradient(90deg,var(--background),oklch(.982 .003 150 / .91))}.theme-toggle{min-width:44px;min-height:44px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.steps{list-style:none;padding:0;display:grid;gap:10px}.steps li{display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted-foreground)}.steps li span{width:24px;height:24px;border-radius:50%;border:1px solid var(--primary);color:var(--primary);display:grid;place-items:center;font-size:11px;flex-shrink:0}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.platform{display:flex;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted-foreground);opacity:.55}.platform svg{width:14px;height:14px}.platform.on{opacity:1;color:var(--foreground);background:var(--card)}.platform.on svg{color:var(--primary)}
+.limitations{padding-left:18px;color:var(--muted-foreground);font-size:13px;line-height:1.7;margin-top:12px}
