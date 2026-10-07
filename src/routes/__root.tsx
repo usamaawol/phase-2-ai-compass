@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter, useLocation, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
 import { Footer } from "@/components/compass/shared";
@@ -123,6 +123,7 @@ function AppShell() {
     <div className="app-layout">
       <Sidebar />
       <div className="page-area">
+        <AnnouncementBanner />
         <main><Outlet /></main>
         <Footer />
       </div>
@@ -130,6 +131,28 @@ function AppShell() {
   );
 }
 
+/** Reads announcement from localStorage (set by admin via site_settings) */
+function AnnouncementBanner() {
+  const [msg, setMsg] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    // Attempt to read from Supabase site_settings on client
+    import('@/integrations/supabase/client')
+      .then(({ supabase }) => supabase.from('site_settings').select('announcement').limit(1).single())
+      .then(({ data }) => { if (data?.announcement) setMsg(data.announcement); })
+      .catch(() => {}); // silent — banner is optional
+  }, []);
+
+  if (!msg || dismissed) return null;
+
+  return (
+    <div className="announcement-banner" role="status" aria-live="polite">
+      <span>{msg}</span>
+      <button onClick={() => setDismissed(true)} aria-label="Dismiss announcement" className="announcement-close">✕</button>
+    </div>
+  );
+}
 
 
 

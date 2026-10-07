@@ -7,32 +7,50 @@ git config user.email "kiro@aicompass.app"
 git config user.name "Kiro"
 git add -A
 git diff --cached --name-only
-if git diff --cached --quiet; then echo "Nothing to commit."; else
-  git commit -m "feat: working Compare page, footer links, homepage /find link
+git commit -m "feat: Submit Tool page, Account page, Compare & Find buttons on tool profiles, announcement banner
 
-Compare page (/compare) — fully working side-by-side comparison:
-- URL state: ?tools=chatgpt,claude stores selected slugs
-- Add up to 4 tools via searchable picker dropdown
-- Quick-start comparison presets (ChatGPT vs Claude, etc.)
-- Full comparison table: company, launch year, skill level, open source,
-  API, free plan, pricing, categories, platforms, tags, verification
-- Dedicated platform support rows (Web, Android, iOS, Windows, macOS, etc.)
-- Rule-based 'Quick take' summary (open source, API, skill level)
-- Remove individual tools or clear all
-- Mobile-responsive with horizontal scroll on small screens
-- Demo note: data is illustrative, confirm on official sites
+Tool profile (/tool/:slug):
+- Compare button → navigates to /compare?tools=<slug>
+- Find similar button → navigates to /find
+- Visit Official Site button in heading actions
+- 'Add to comparison' button in sidebar
 
-Footer improvements:
-- Added 'Find my AI' link to footer navigation
-- Dynamic copyright year (new Date().getFullYear())
-- Updated tagline to 'Find the right AI. For the job.'
+Submit Tool page (/submit):
+- Requires Google sign-in (auth gate with sign-in button)
+- Form: name, official URL, company, short description, categories, notes
+- Validates https:// URL requirement
+- Submits to Supabase tool_submissions table
+- Success state with 'Submit another' option
+- Guidelines panel (no affiliate links, official URLs only)
 
-Homepage:
-- 'Not sure which AI?' section now links to /find with a button
-- Updated copy to reference transparent matching
+Account page (/account):
+- Shows user avatar, display name, email
+- Lists all their own submissions with status badges
+- Sign out + Submit a tool buttons
+- Redirects to / if not signed in
 
-CSS: cmp-selector, cmp-table, cmp-picker-dropdown, cmp-summary,
-     cmp-quick-picks, cmp-section-header, cmp-cell, mobile overrides"
-fi
+Announcement banner (global):
+- Reads announcement from Supabase site_settings on client load
+- Sticky below mobile topbar, dismissable
+- Only shows if admin has set an announcement text
+
+Sidebar:
+- Added 'Submit Tool' nav item (Send icon, protected)
+- Account link in user chip (links to /account)
+- Sign out shortened to 'Out' to fit
+
+Footer:
+- Added 'Submit a Tool' link
+- Dynamic copyright year
+
+Root:
+- useState added to imports (was missing — caused compile error)
+- AnnouncementBanner component in AppShell
+
+routeTree: /submit and /account registered in all type maps
+
+CSS: profile-actions, submit-guidelines, submit-auth-gate, submit-form,
+     submit-success, account-card, account-avatar, account-empty,
+     announcement-banner, announcement-close"
 git push origin main
 echo "=== Done ===" && git log --oneline -4

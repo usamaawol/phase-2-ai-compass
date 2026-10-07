@@ -23,6 +23,7 @@ export function Footer(){
             <Link className="nav-link" to="/find">Find my AI</Link>
             <Link className="nav-link" to="/categories">Categories</Link>
             <Link className="nav-link" to="/compare">Compare</Link>
+            <Link className="nav-link" to="/submit">Submit a Tool</Link>
             <Link className="nav-link" to="/about">About</Link>
           </nav>
         </div>

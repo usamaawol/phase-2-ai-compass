@@ -1,5 +1,5 @@
-import { createFileRoute, notFound, Link } from '@tanstack/react-router';
-import { ChevronRight, ArrowUpRight, Check, X, ShieldAlert } from 'lucide-react';
+import { createFileRoute, notFound, Link, useNavigate } from '@tanstack/react-router';
+import { ChevronRight, ArrowUpRight, Check, X, ShieldAlert, GitCompareArrows, Lightbulb, BookmarkPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getTool, getCategory, tools, platformList } from '@/lib/catalog';
 import { ToolLogo, ToolGrid, SectionHeading, DemoNote } from '@/components/compass/shared';
@@ -25,10 +25,16 @@ export const Route = createFileRoute('/tool/$slug')({
 
 function ToolPage() {
   const { slug } = Route.useParams();
+  const navigate  = useNavigate();
   const t = getTool(slug);
   if (!t) return null;
   const alternatives = t.alternatives.map(s => tools.find(x => x.slug === s)!).filter(Boolean);
   const yesNo = (v: boolean | null) => v === null ? 'Check official website' : v ? 'Yes (reported)' : 'Not listed';
+
+  function addToCompare() {
+    navigate({ to: '/compare', search: { tools: t!.slug } });
+  }
+
   return (
     <div className="shell">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -36,7 +42,27 @@ function ToolPage() {
       </nav>
       <div className="profile-heading">
         <ToolLogo tool={t} />
-        <div><h1>{t.name}</h1><p>{t.short_description}</p><p className="text-xs text-muted-foreground mt-2">by {t.company}</p></div>
+        <div>
+          <h1>{t.name}</h1>
+          <p>{t.short_description}</p>
+          <p className="text-xs text-muted-foreground mt-2">by {t.company}</p>
+          {/* Action buttons */}
+          <div className="profile-actions">
+            <Button size="sm" variant="outline" onClick={addToCompare}>
+              <GitCompareArrows size={14}/> Compare
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/find" search={{}}>
+                <Lightbulb size={14}/> Find similar
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <a href={t.official_url} target="_blank" rel="noopener noreferrer">
+                <ArrowUpRight size={14}/> Official site
+              </a>
+            </Button>
+          </div>
+        </div>
       </div>
       <div className="profile-layout">
         <div className="profile-main">
@@ -64,6 +90,9 @@ function ToolPage() {
         <aside className="profile-aside" aria-label="Tool quick facts">
           <Button asChild className="w-full">
             <a href={t.official_url} target="_blank" rel="noopener noreferrer">Visit Official Website<ArrowUpRight /></a>
+          </Button>
+          <Button variant="outline" className="w-full mt-2" onClick={addToCompare}>
+            <GitCompareArrows size={14}/> Add to comparison
           </Button>
           <dl>
             {([['Company', t.company], ['Launched', t.launch_year ? `${t.launch_year} (reported)` : 'Not verified'], ['Pricing', 'Check official website'], ['Open source', t.open_source ? 'Yes (reported)' : 'Not listed'], ['API', yesNo(t.api_available)], ['Skill level', `${t.skill_level} · guide`], ['Status', t.verification_status], ['Last verified', t.last_verified ?? 'Not yet checked']] as [string, string][])

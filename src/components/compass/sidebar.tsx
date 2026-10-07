@@ -3,7 +3,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import {
   Compass, Home, Search, LayoutGrid, GitCompareArrows,
   Info, Sun, Moon, LogIn, LogOut, Lock, X, Menu, ShieldCheck,
-  Sparkles, Lightbulb,
+  Sparkles, Lightbulb, Send, User,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from './theme-provider';
@@ -21,6 +21,7 @@ const NAV: NavItem[] = [
   { to: '/find',       label: 'Find my AI', icon: Lightbulb,        protected: true },
   { to: '/categories', label: 'Categories', icon: LayoutGrid,       protected: true },
   { to: '/compare',    label: 'Compare',    icon: GitCompareArrows, protected: true },
+  { to: '/submit',     label: 'Submit Tool',icon: Send,             protected: true },
   { to: '/about',      label: 'About',      icon: Info },
 ];
 
@@ -149,14 +150,18 @@ function NavContent({ onClose, onLoginRequest }: { onClose: () => void; onLoginR
                 : <div className="nav-avatar-fallback"><Sparkles size={12}/></div>
               }
               <div className="nav-user-info">
-                <span className="nav-user-name">{user.displayName ?? user.email ?? 'User'}</span>
+                <Link to="/account" className="nav-user-name" onClick={onClose}>{user.displayName ?? user.email ?? 'User'}</Link>
                 <div className="nav-user-actions">
                   <Link to="/admin" className="nav-admin-link" onClick={onClose}>
                     <ShieldCheck size={10}/> Admin
                   </Link>
                   <span className="nav-user-dot">·</span>
+                  <Link to="/account" className="nav-admin-link" onClick={onClose}>
+                    <User size={10}/> Account
+                  </Link>
+                  <span className="nav-user-dot">·</span>
                   <button className="nav-signout" onClick={() => signOut()}>
-                    <LogOut size={10}/> Sign out
+                    <LogOut size={10}/> Out
                   </button>
                 </div>
               </div>

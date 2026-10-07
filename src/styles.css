@@ -737,3 +737,99 @@
   .cmp-tool-header, .cmp-cell { min-width: 140px; padding: 10px 12px; }
   .cmp-row-label { min-width: 90px; padding: 10px 10px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   TOOL PROFILE — action buttons
+═══════════════════════════════════════════════════════════ */
+.profile-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUBMIT PAGE
+═══════════════════════════════════════════════════════════ */
+.submit-guidelines {
+  background: var(--secondary); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px; margin-bottom: 28px;
+  font-size: 13px; color: var(--muted-foreground); line-height: 1.7;
+}
+.submit-guidelines strong { color: var(--foreground); display: block; margin-bottom: 6px; }
+.submit-guidelines ul { margin: 0; padding-left: 18px; }
+.submit-guidelines li { margin-bottom: 4px; }
+
+.submit-auth-gate {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 60px 20px; text-align: center;
+  border: 1px dashed var(--border); border-radius: 14px;
+  color: var(--muted-foreground);
+}
+.submit-auth-gate svg { color: var(--primary); }
+.submit-auth-gate h2 { font-size: 20px; font-weight: 650; color: var(--foreground); margin: 0; }
+.submit-auth-gate p  { margin: 0; max-width: 360px; }
+
+.submit-form { max-width: 760px; }
+.submit-form-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+  margin-bottom: 16px;
+}
+
+.submit-success {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 80px 20px; text-align: center;
+}
+.submit-success svg { color: var(--primary); }
+.submit-success h1 { font-size: 28px; font-weight: 700; margin: 0; }
+.submit-success p  { color: var(--muted-foreground); max-width: 440px; line-height: 1.7; margin: 0; }
+
+@media (max-width: 700px) {
+  .submit-form-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCOUNT PAGE
+═══════════════════════════════════════════════════════════ */
+.account-card {
+  display: flex; align-items: center; gap: 18px;
+  padding: 20px 24px; border: 1px solid var(--border);
+  border-radius: 14px; background: var(--card);
+  flex-wrap: wrap;
+}
+.account-avatar-wrap { flex-shrink: 0; }
+.account-avatar {
+  width: 58px; height: 58px; border-radius: 50%; object-fit: cover;
+  border: 3px solid oklch(from var(--primary) l c h / .3);
+}
+.account-avatar-fallback {
+  width: 58px; height: 58px; border-radius: 50%;
+  background: oklch(from var(--primary) l c h / .1);
+  border: 2px solid oklch(from var(--primary) l c h / .25);
+  color: var(--primary); display: flex; align-items: center; justify-content: center;
+}
+.account-info { flex: 1; min-width: 0; }
+.account-name  { font-size: 18px; font-weight: 700; margin: 0 0 2px; color: var(--foreground); }
+.account-email { font-size: 13px; color: var(--muted-foreground); margin: 0; }
+.account-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.account-empty {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  padding: 32px; border: 1px dashed var(--border); border-radius: 10px;
+  color: var(--muted-foreground); font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOUNCEMENT BANNER
+═══════════════════════════════════════════════════════════ */
+.announcement-banner {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 10px 20px; min-height: 40px;
+  background: oklch(from var(--primary) l c h / .1);
+  border-bottom: 1px solid oklch(from var(--primary) l c h / .2);
+  font-size: 13px; color: var(--foreground); text-align: center;
+  position: sticky; top: 0; z-index: 25;
+}
+.announcement-close {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--muted-foreground); font-size: 14px; margin-left: auto;
+  padding: 2px 6px; border-radius: 4px; transition: background .15s;
+  flex-shrink: 0;
+}
+.announcement-close:hover { background: var(--secondary); }
