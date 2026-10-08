@@ -7,36 +7,34 @@ git config user.email "kiro@aicompass.app"
 git config user.name "Kiro"
 git add -A
 git diff --cached --name-only
-git commit -m "feat: Changelog page, bookmarks, changelog route, sidebar polish
+git commit -m "feat: Saved Tools, Privacy, Terms, footer redesign, sitemap update
 
-Changelog (/changelog):
-- Version history with type badges (feature/improvement/fix)
-- Color-coded entries with item lists and check icons
-- Sticky roadmap sidebar with planned features
-- Submit a Tool link at the bottom
+New pages:
+- /saved — view all bookmarked tools, clear all, empty state
+- /privacy — full privacy policy (Firebase Auth, Supabase, no tracking)
+- /terms — full terms of service (submissions policy, accuracy disclaimer)
 
-Bookmarks (useBookmarks hook):
-- Toggle bookmark on any tool card (heart/bookmark icon)
-- Persisted in localStorage (per-uid when signed in, global when guest)
-- Bookmark button on ToolCard with saved/unsaved states and accessible labels
-- No Supabase migrations needed — pure localStorage for now
+Footer redesign:
+- Three-column layout: Explore / Community / Legal
+- Section headings (EXPLORE, COMMUNITY, LEGAL)
+- All major pages linked including Privacy and Terms
 
 Sidebar:
-- Added Changelog nav item (ScrollText icon, public)
-- Fixed duplicate Info icon — Changelog uses ScrollText, About keeps Info
-- All 8 nav items: Home, Discover, Find my AI, Categories, Compare,
-  Submit Tool, Changelog, About
+- Added Saved nav item (Bookmark icon, protected)
+- 9 nav items total: Home, Discover, Find my AI, Categories, Compare,
+  Saved, Submit Tool, Changelog, About
+- Login modal Terms + Privacy links updated to link to /terms and /privacy
 
-Footer:
-- Added Changelog link
+routeTree:
+- /saved, /privacy, /terms registered in all type maps
 
-routeTree: /changelog registered in all type maps and rootRouteChildren
+CSS:
+- .footer-nav, .footer-nav-col, .footer-nav-heading, .footer-nav-link
+- .saved-empty, .saved-header
+- Mobile footer wraps to column
 
-CSS additions:
-- .tool-bookmark, .tool-bookmark.saved — bookmark button on tool cards
-- .cl-layout, .cl-entry, .cl-entry-meta, .cl-type-* — changelog layout
-- .cl-roadmap, .cl-roadmap-list, .cl-planned — roadmap sidebar
-- Dark and light mode variants for all cl-type-* badges
-- Mobile: single column, unsticky roadmap"
+public/sitemap.xml:
+- Recreated with all 95 URLs: 10 core + 26 categories + 52 tools + 7 utility
+  (find, compare, submit, changelog, about, privacy, terms)"
 git push origin main
-echo "=== Done ===" && git log --oneline -5
+echo "=== Done ===" && git log --oneline -4

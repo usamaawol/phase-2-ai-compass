@@ -19,14 +19,26 @@ export function Footer(){
             </Link>
             <p className="footer-tagline">Find the Right AI for the Job.</p>
           </div>
-          <nav aria-label="Footer navigation" style={{display:'flex',gap:28,flexWrap:'wrap',alignItems:'center'}}>
-            <Link className="nav-link" to="/discover">Discover</Link>
-            <Link className="nav-link" to="/find">Find my AI</Link>
-            <Link className="nav-link" to="/categories">Categories</Link>
-            <Link className="nav-link" to="/compare">Compare</Link>
-            <Link className="nav-link" to="/submit">Submit a Tool</Link>
-            <Link className="nav-link" to="/changelog">Changelog</Link>
-            <Link className="nav-link" to="/about">About</Link>
+          <nav aria-label="Footer navigation" className="footer-nav">
+            <div className="footer-nav-col">
+              <span className="footer-nav-heading">Explore</span>
+              <Link className="footer-nav-link" to="/discover">Discover</Link>
+              <Link className="footer-nav-link" to="/find">Find my AI</Link>
+              <Link className="footer-nav-link" to="/categories">Categories</Link>
+              <Link className="footer-nav-link" to="/compare">Compare</Link>
+              <Link className="footer-nav-link" to="/saved">Saved tools</Link>
+            </div>
+            <div className="footer-nav-col">
+              <span className="footer-nav-heading">Community</span>
+              <Link className="footer-nav-link" to="/submit">Submit a tool</Link>
+              <Link className="footer-nav-link" to="/changelog">Changelog</Link>
+              <Link className="footer-nav-link" to="/about">About</Link>
+            </div>
+            <div className="footer-nav-col">
+              <span className="footer-nav-heading">Legal</span>
+              <Link className="footer-nav-link" to="/privacy">Privacy</Link>
+              <Link className="footer-nav-link" to="/terms">Terms</Link>
+            </div>
           </nav>
         </div>
         <div className="footer-bottom">

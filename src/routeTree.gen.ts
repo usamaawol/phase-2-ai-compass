@@ -11,8 +11,11 @@ import { Route as CompareRouteImport }           from './routes/compare'
 import { Route as DiscoverRouteImport }          from './routes/discover'
 import { Route as FindRouteImport }              from './routes/find'
 import { Route as SubmitRouteImport }            from './routes/submit'
+import { Route as SavedRouteImport }             from './routes/saved'
 import { Route as AccountRouteImport }           from './routes/account'
 import { Route as ChangelogRouteImport }         from './routes/changelog'
+import { Route as PrivacyRouteImport }           from './routes/privacy'
+import { Route as TermsRouteImport }             from './routes/terms'
 import { Route as CategorySlugRouteImport }      from './routes/category.$slug'
 import { Route as ToolSlugRouteImport }          from './routes/tool.$slug'
 import { Route as AdminRouteImport }             from './routes/admin'
@@ -33,8 +36,11 @@ const CategoriesRoute= CategoriesRouteImport.update({ id: '/categories', path: '
 const CompareRoute   = CompareRouteImport.update({ id: '/compare', path: '/compare', getParentRoute: () => rootRouteImport } as any)
 const FindRoute      = FindRouteImport.update({ id: '/find', path: '/find', getParentRoute: () => rootRouteImport } as any)
 const SubmitRoute    = SubmitRouteImport.update({ id: '/submit', path: '/submit', getParentRoute: () => rootRouteImport } as any)
+const SavedRoute     = SavedRouteImport.update({ id: '/saved', path: '/saved', getParentRoute: () => rootRouteImport } as any)
 const AccountRoute   = AccountRouteImport.update({ id: '/account', path: '/account', getParentRoute: () => rootRouteImport } as any)
 const ChangelogRoute = ChangelogRouteImport.update({ id: '/changelog', path: '/changelog', getParentRoute: () => rootRouteImport } as any)
+const PrivacyRoute   = PrivacyRouteImport.update({ id: '/privacy', path: '/privacy', getParentRoute: () => rootRouteImport } as any)
+const TermsRoute     = TermsRouteImport.update({ id: '/terms', path: '/terms', getParentRoute: () => rootRouteImport } as any)
 const DiscoverRoute  = DiscoverRouteImport.update({ id: '/discover', path: '/discover', getParentRoute: () => rootRouteImport } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({ id: '/category/$slug', path: '/category/$slug', getParentRoute: () => rootRouteImport } as any)
 const ToolSlugRoute  = ToolSlugRouteImport.update({ id: '/tool/$slug', path: '/tool/$slug', getParentRoute: () => rootRouteImport } as any)
@@ -52,28 +58,31 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({ id: '/admin/s
 const AdminSettingsRoute  = AdminSettingsRouteImport.update({ id: '/admin/settings', path: '/settings', getParentRoute: () => AdminRoute } as any)
 
 /* ── Types ───────────────────────────────────────────────────── */
+type R<T> = T
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute; '/about': typeof AboutRoute
-  '/categories': typeof CategoriesRoute; '/compare': typeof CompareRoute
-  '/find': typeof FindRoute; '/submit': typeof SubmitRoute
-  '/account': typeof AccountRoute; '/changelog': typeof ChangelogRoute
-  '/discover': typeof DiscoverRoute
-  '/category/$slug': typeof CategorySlugRoute; '/tool/$slug': typeof ToolSlugRoute
-  '/admin': typeof AdminRoute; '/admin/': typeof AdminIndexRoute
-  '/admin/tools': typeof AdminToolsRoute; '/admin/tools/new': typeof AdminToolsNewRoute
-  '/admin/tools/$slug/edit': typeof AdminToolsEditRoute
-  '/admin/categories': typeof AdminCategoriesRoute; '/admin/tags': typeof AdminTagsRoute
-  '/admin/featured': typeof AdminFeaturedRoute; '/admin/submissions': typeof AdminSubmissionsRoute
-  '/admin/settings': typeof AdminSettingsRoute
+  '/': R<typeof IndexRoute>; '/about': R<typeof AboutRoute>
+  '/categories': R<typeof CategoriesRoute>; '/compare': R<typeof CompareRoute>
+  '/find': R<typeof FindRoute>; '/submit': R<typeof SubmitRoute>
+  '/saved': R<typeof SavedRoute>; '/account': R<typeof AccountRoute>
+  '/changelog': R<typeof ChangelogRoute>; '/privacy': R<typeof PrivacyRoute>
+  '/terms': R<typeof TermsRoute>; '/discover': R<typeof DiscoverRoute>
+  '/category/$slug': R<typeof CategorySlugRoute>; '/tool/$slug': R<typeof ToolSlugRoute>
+  '/admin': R<typeof AdminRoute>; '/admin/': R<typeof AdminIndexRoute>
+  '/admin/tools': R<typeof AdminToolsRoute>; '/admin/tools/new': R<typeof AdminToolsNewRoute>
+  '/admin/tools/$slug/edit': R<typeof AdminToolsEditRoute>
+  '/admin/categories': R<typeof AdminCategoriesRoute>; '/admin/tags': R<typeof AdminTagsRoute>
+  '/admin/featured': R<typeof AdminFeaturedRoute>; '/admin/submissions': R<typeof AdminSubmissionsRoute>
+  '/admin/settings': R<typeof AdminSettingsRoute>
 }
 export interface FileRoutesByTo extends FileRoutesByFullPath {}
-export interface FileRoutesById {
+export interface FileRoutesById extends Record<string, unknown> {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute; '/about': typeof AboutRoute
   '/categories': typeof CategoriesRoute; '/compare': typeof CompareRoute
   '/find': typeof FindRoute; '/submit': typeof SubmitRoute
-  '/account': typeof AccountRoute; '/changelog': typeof ChangelogRoute
-  '/discover': typeof DiscoverRoute
+  '/saved': typeof SavedRoute; '/account': typeof AccountRoute
+  '/changelog': typeof ChangelogRoute; '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute; '/discover': typeof DiscoverRoute
   '/category/$slug': typeof CategorySlugRoute; '/tool/$slug': typeof ToolSlugRoute
   '/admin': typeof AdminRoute; '/admin/': typeof AdminIndexRoute
   '/admin/tools': typeof AdminToolsRoute; '/admin/tools/new': typeof AdminToolsNewRoute
@@ -91,8 +100,11 @@ declare module '@tanstack/react-router' {
     '/compare':        { id:'/compare'; path:'/compare'; fullPath:'/compare'; preLoaderRoute: typeof CompareRouteImport; parentRoute: typeof rootRouteImport }
     '/find':           { id:'/find'; path:'/find'; fullPath:'/find'; preLoaderRoute: typeof FindRouteImport; parentRoute: typeof rootRouteImport }
     '/submit':         { id:'/submit'; path:'/submit'; fullPath:'/submit'; preLoaderRoute: typeof SubmitRouteImport; parentRoute: typeof rootRouteImport }
+    '/saved':          { id:'/saved'; path:'/saved'; fullPath:'/saved'; preLoaderRoute: typeof SavedRouteImport; parentRoute: typeof rootRouteImport }
     '/account':        { id:'/account'; path:'/account'; fullPath:'/account'; preLoaderRoute: typeof AccountRouteImport; parentRoute: typeof rootRouteImport }
     '/changelog':      { id:'/changelog'; path:'/changelog'; fullPath:'/changelog'; preLoaderRoute: typeof ChangelogRouteImport; parentRoute: typeof rootRouteImport }
+    '/privacy':        { id:'/privacy'; path:'/privacy'; fullPath:'/privacy'; preLoaderRoute: typeof PrivacyRouteImport; parentRoute: typeof rootRouteImport }
+    '/terms':          { id:'/terms'; path:'/terms'; fullPath:'/terms'; preLoaderRoute: typeof TermsRouteImport; parentRoute: typeof rootRouteImport }
     '/discover':       { id:'/discover'; path:'/discover'; fullPath:'/discover'; preLoaderRoute: typeof DiscoverRouteImport; parentRoute: typeof rootRouteImport }
     '/category/$slug': { id:'/category/$slug'; path:'/category/$slug'; fullPath:'/category/$slug'; preLoaderRoute: typeof CategorySlugRouteImport; parentRoute: typeof rootRouteImport }
     '/tool/$slug':     { id:'/tool/$slug'; path:'/tool/$slug'; fullPath:'/tool/$slug'; preLoaderRoute: typeof ToolSlugRouteImport; parentRoute: typeof rootRouteImport }
@@ -110,7 +122,8 @@ AdminRoute._addFileChildren({
 export const routeTree = rootRouteImport
   ._addFileChildren({
     IndexRoute, AboutRoute, CategoriesRoute, CompareRoute,
-    FindRoute, SubmitRoute, AccountRoute, ChangelogRoute,
+    FindRoute, SubmitRoute, SavedRoute, AccountRoute,
+    ChangelogRoute, PrivacyRoute, TermsRoute,
     DiscoverRoute, CategorySlugRoute, ToolSlugRoute, AdminRoute,
   })
   ._addFileTypes<FileRoutesByFullPath>()

@@ -928,3 +928,44 @@
   .cl-layout { grid-template-columns: 1fr; gap: 32px; }
   .cl-roadmap { position: static; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER — multi-column layout
+═══════════════════════════════════════════════════════════ */
+.footer-nav {
+  display: flex; gap: 40px; flex-wrap: wrap;
+}
+.footer-nav-col {
+  display: flex; flex-direction: column; gap: 8px; min-width: 110px;
+}
+.footer-nav-heading {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+.footer-nav-link {
+  font-size: 12px; color: var(--muted-foreground);
+  text-decoration: none; transition: color .15s;
+}
+.footer-nav-link:hover { color: var(--primary); }
+
+/* ═══════════════════════════════════════════════════════════
+   SAVED PAGE
+═══════════════════════════════════════════════════════════ */
+.saved-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 80px 20px; text-align: center;
+  color: var(--muted-foreground);
+}
+.saved-empty svg  { color: var(--muted-foreground); opacity: .4; }
+.saved-empty h2   { font-size: 20px; font-weight: 650; color: var(--foreground); margin: 0; }
+.saved-empty p    { margin: 0; max-width: 340px; font-size: 13px; line-height: 1.6; }
+.saved-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 700px) {
+  .footer-nav { gap: 24px; }
+  .footer-top { flex-direction: column; gap: 28px; }
+}
