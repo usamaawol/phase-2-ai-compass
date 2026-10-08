@@ -1,6 +1,11 @@
 // ============================================================
 // Firebase Storage Security Rules — AI Compass
 // Deploy: firebase deploy --only storage
+//
+// Collections:
+//   /tools/{toolId}/...   — tool logos, screenshots (admin upload only)
+//   /avatars/{uid}/...    — user profile photos (own uploads)
+//   /temp/...             — transient uploads (clean up regularly)
 // ============================================================
 
 rules_version = '2';
@@ -19,12 +24,32 @@ service firebase.storage {
           );
     }
 
+    function matchesMime(pattern) {
+      return request.resource.contentType.matches(pattern);
+    }
+
+    function isImage() {
+      return matchesMime('image/.*');
+    }
+
+    function sizeUnder(maxMB) {
+      return request.resource.size < maxMB * 1024 * 1024;
+    }
+
     // ── Tool logos / images (admin upload only) ─────────────────
-    match /tools/{toolId}/{filename} {
-      allow read:   if true;           // public
+    match /tools/{toolId}/{allPaths=**} {
+      allow read:   if true;
       allow write:  if isAdmin()
-                    && request.resource.size  < 2 * 1024 * 1024  // max 2 MB
-                    && request.resource.contentType.matches('image/.*');
+                    && sizeUnder(5)
+                    && isImage();
+    }
+
+    // ── Category icons (admin upload only) ──────────────────────
+    match /categories/{catId}/{allPaths=**} {
+      allow read:   if true;
+      allow write:  if isAdmin()
+                    && sizeUnder(2)
+                    && isImage();
     }
 
     // ── User avatars ────────────────────────────────────────────
@@ -32,8 +57,32 @@ service firebase.storage {
       allow read:   if true;
       allow write:  if isSignedIn()
                     && request.auth.uid == uid
-                    && request.resource.size < 1 * 1024 * 1024  // max 1 MB
-                    && request.resource.contentType.matches('image/.*');
+                    && sizeUnder(2)
+                    && isImage();
+      allow delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ── Submission attachments (signed-in users) ────────────────
+    match /submissions/{subId}/{filename} {
+      allow read:   if isAdmin()
+                    || (isSignedIn() && request.auth.uid == resource.metadata.uploaderUid);
+      allow write:  if isSignedIn()
+                    && sizeUnder(5)
+                    && isImage()
+                    && request.resource.metadata.uploaderUid == request.auth.uid;
+      allow delete: if isAdmin()
+                    || (isSignedIn() && request.auth.uid == resource.metadata.uploaderUid);
+    }
+
+    // ── OG / Social images (public, admin writes) ───────────────
+    match /og-images/{allPaths=**} {
+      allow read:   if true;
+      allow write:  if isAdmin() && sizeUnder(3) && isImage();
+    }
+
+    // ── Temp / scratch bucket (any signed-in user, auto-expire) ─
+    match /temp/{uid}/{allPaths=**} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid && sizeUnder(10);
     }
 
     // ── Deny everything else ────────────────────────────────────

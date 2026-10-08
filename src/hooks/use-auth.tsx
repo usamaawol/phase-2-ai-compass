@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 // Lightweight auth state — no Firebase SDK required until the user actually signs in.
 // We lazy-load firebase/auth only when needed to keep the initial bundle small.
@@ -25,16 +25,20 @@ const AuthContext = createContext<AuthCtx>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]       = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Dynamically import firebase only on the client
     let unsub: (() => void) | undefined;
-    import('@/lib/firebase')
+    import("@/lib/firebase")
       .then(({ auth, onAuthStateChanged }) => {
         unsub = onAuthStateChanged(auth, (u) => {
-          setUser(u ? { uid: u.uid, email: u.email, displayName: u.displayName, photoURL: u.photoURL } : null);
+          setUser(
+            u
+              ? { uid: u.uid, email: u.email, displayName: u.displayName, photoURL: u.photoURL }
+              : null,
+          );
           setLoading(false);
         });
       })
@@ -43,12 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn() {
-    const { signInWithGoogle } = await import('@/lib/firebase');
+    const { signInWithGoogle } = await import("@/lib/firebase");
     await signInWithGoogle();
   }
 
   async function signOut() {
-    const { signOutUser } = await import('@/lib/firebase');
+    const { signOutUser } = await import("@/lib/firebase");
     await signOutUser();
   }
 

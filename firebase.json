@@ -9,9 +9,7 @@
   "hosting": {
     "public": "dist/client",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      { "source": "**", "destination": "/index.html" }
-    ],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }],
     "headers": [
       {
         "source": "**/*.@(js|mjs|css)",

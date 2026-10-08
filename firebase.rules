@@ -1,12 +1,18 @@
 // ============================================================
 // Firebase Security Rules — AI Compass
-// Project: aicompass-f1ada
+// Project: AI Compass (Firebase Firestore)
 //
 // HOW TO DEPLOY:
-//   firebase deploy --only firestore:rules
-//   (requires firebase-tools: npm install -g firebase-tools)
+//   1. Install firebase-tools:  npm install -g firebase-tools
+//   2. Authenticate:           firebase login
+//   3. Select project:         firebase use your-project-id
+//   4. Deploy rules:           firebase deploy --only firestore:rules
 //
 // STORAGE RULES: see firebase.storage.rules
+// DEPLOY INDEXES:   firebase deploy --only firestore:indexes
+//
+// INITIAL ADMIN SETUP (run once via Firebase Console or Admin SDK):
+//   db.collection('admin_users').doc(YOUR_UID).set({ role: 'admin' })
 // ============================================================
 
 rules_version = '2';
@@ -23,11 +29,11 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    // Admin role is stored in /admin_users/{uid}
-    // Assign with: db.collection('admin_users').doc(uid).set({ role: 'admin' })
+    // Admin role is stored in /admin_users/{uid} with { role: 'admin' }
     function isAdmin() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/admin_users/$(request.auth.uid));
+        && exists(/databases/$(database)/documents/admin_users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isValidString(val, maxLen) {
@@ -35,21 +41,49 @@ service cloud.firestore {
     }
 
     function isValidUrl(val) {
-      return val is string && (val.matches('https://.*') || val == '');
+      return val is string && (val == '' || val.matches('https?://.*'));
+    }
+
+    function isValidEmail(val) {
+      return val is string && val.matches('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+    }
+
+    function assertNoFieldChange(fields, oldData, newData) {
+      return fields.all(field, oldData[field] == newData[field]);
+    }
+
+    function requestTime() {
+      return request.time;
+    }
+
+    // ── Admin users registry ────────────────────────────────────
+    // Only readable/writable by existing admins.
+    // Initial admin MUST be set via Firebase console or Admin SDK.
+    match /admin_users/{uid} {
+      allow read:   if isAdmin();
+      allow write:  if isAdmin()
+                    && request.resource.data.keys().hasOnly(['role', 'grantedAt', 'grantedBy', 'name', 'email'])
+                    && request.resource.data.role is string
+                    && request.resource.data.role in ['admin', 'moderator', 'editor'];
     }
 
     // ── Public catalog tools ───────────────────────────────────
     // Anyone can read published tools.
     // Only admins can create, update, or delete.
     match /tools/{toolId} {
-      allow read: if resource.data.status == 'published'
-                    || isAdmin();
+      allow read: if (resource.data.status == 'published' || isAdmin());
+
       allow create: if isAdmin()
                     && isValidString(request.resource.data.name, 200)
-                    && isValidUrl(request.resource.data.official_url);
+                    && isValidUrl(request.resource.data.official_url)
+                    && request.resource.data.keys().hasAll(['slug', 'name', 'status', 'created_at', 'updated_at'])
+                    && request.resource.data.status in ['draft', 'published', 'archived'];
+
       allow update: if isAdmin()
-                    && isValidString(request.resource.data.name, 200)
-                    && isValidUrl(request.resource.data.official_url);
+                    && (!('name' in request.resource.data) || isValidString(request.resource.data.name, 200))
+                    && (!('official_url' in request.resource.data) || isValidUrl(request.resource.data.official_url))
+                    && (!('status' in request.resource.data) || request.resource.data.status in ['draft', 'published', 'archived']);
+
       allow delete: if isAdmin(); // prefer archive (status=archived) over hard delete
     }
 
@@ -57,46 +91,48 @@ service cloud.firestore {
     // Public read. Admin write.
     match /categories/{catId} {
       allow read:   if true;
-      allow write:  if isAdmin();
+      allow write:  if isAdmin()
+                    && isValidString(request.resource.data.name, 100)
+                    && isValidString(request.resource.data.description, 500);
     }
 
     // ── Tags ────────────────────────────────────────────────────
     // Public read. Admin write.
     match /tags/{tagId} {
       allow read:   if true;
-      allow write:  if isAdmin();
-    }
-
-    // ── Admin users registry ────────────────────────────────────
-    // Only readable/writable by existing admins.
-    // Initial admin must be set via Firebase console or server SDK.
-    match /admin_users/{uid} {
-      allow read:   if isAdmin();
-      allow write:  if isAdmin(); // existing admin can grant/revoke
+      allow write:  if isAdmin()
+                    && isValidString(request.resource.data.name, 50);
     }
 
     // ── User profiles ───────────────────────────────────────────
     // Each user can read/write their own profile only.
+    // Admins can read all for moderation.
     match /users/{uid} {
       allow read:   if isOwner(uid) || isAdmin();
+
       allow create: if isOwner(uid)
                     && request.resource.data.keys().hasOnly(
-                        ['uid','email','displayName','photoURL','bio','createdAt','updatedAt','lastLoginAt']
+                        ['uid','email','displayName','display_name','photoURL','avatar_url','bio','preferences','createdAt','updatedAt','lastLoginAt']
                       )
-                    && isValidString(request.resource.data.displayName, 100);
+                    && (!('displayName' in request.resource.data) || isValidString(request.resource.data.displayName, 100))
+                    && (!('display_name' in request.resource.data) || isValidString(request.resource.data.display_name, 100))
+                    && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email);
+
       allow update: if isOwner(uid)
                     && request.resource.data.uid == uid  // can't change uid
-                    && isValidString(request.resource.data.displayName, 100)
-                    && (!('bio' in request.resource.data)
-                        || isValidString(request.resource.data.bio, 500));
+                    && (!('displayName' in request.resource.data) || isValidString(request.resource.data.displayName, 100))
+                    && (!('display_name' in request.resource.data) || isValidString(request.resource.data.display_name, 100))
+                    && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email)
+                    && (!('bio' in request.resource.data) || isValidString(request.resource.data.bio, 500));
+
       allow delete: if isOwner(uid) || isAdmin();
 
       // Bookmarks subcollection — each user owns their own bookmarks
-      match /bookmarks/{toolId} {
+      match /bookmarks/{toolIdRef} {
         allow read:   if isOwner(uid);
         allow create: if isOwner(uid)
                       && request.resource.data.keys().hasOnly(['toolId','createdAt'])
-                      && request.resource.data.toolId == toolId;
+                      && request.resource.data.toolId == toolIdRef;
         allow delete: if isOwner(uid);
         allow update: if false; // bookmarks are create/delete only
       }
@@ -106,15 +142,19 @@ service cloud.firestore {
     // Signed-in users can create and read their own submissions.
     // Admins can read all and update status/review_note.
     match /tool_submissions/{subId} {
-      allow read:   if isOwner(resource.data.user_id) || isAdmin();
+      allow read:   if (resource.data.user_id == request.auth.uid) || isAdmin();
+
       allow create: if isSignedIn()
                     && request.resource.data.user_id == request.auth.uid
-                    && request.resource.data.status  == 'pending'
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.data.keys().hasAny(['name', 'official_url'])
                     && isValidString(request.resource.data.data.name, 200)
                     && isValidUrl(request.resource.data.data.official_url);
+
       allow update: if isAdmin()
-                    && request.resource.data.user_id == resource.data.user_id // can't reassign
-                    && request.resource.data.data    == resource.data.data;    // admin can't change submitted data, only status
+                    // Admin can only change status + review_note, never user_id or submitted data
+                    && assertNoFieldChange(['user_id', 'data', 'created_at'], resource.data, request.resource.data);
+
       allow delete: if isAdmin();
     }
 
@@ -123,7 +163,24 @@ service cloud.firestore {
     // Admin write only.
     match /site_settings/{docId} {
       allow read:  if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin()
+                   && request.resource.data.keys().hasOnly(
+                        ['announcement', 'tagline', 'submissions_open', 'updated_at', 'updated_by']
+                      )
+                   && isValidString(request.resource.data.announcement, 500)
+                   && isValidString(request.resource.data.tagline, 200);
+    }
+
+    // ── Feedback (stored directly for potential future use) ─────
+    match /feedback/{fbId} {
+      allow create: if true; // anonymous allowed
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── Analytics / Events (public write, admin read) ───────────
+    match /analytics/{eventId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
     }
 
     // ── Deny everything else ────────────────────────────────────

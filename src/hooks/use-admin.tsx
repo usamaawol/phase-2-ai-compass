@@ -6,9 +6,9 @@
  *   const { isAdmin, loading } = useAdmin();
  *   if (!isAdmin) return <AccessDenied />;
  */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useAuth } from './use-auth';
-import { isAdminUser } from '@/lib/admin-db';
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useAuth } from "./use-auth";
+import { isAdminUser } from "@/lib/admin-db";
 
 interface AdminCtx {
   isAdmin: boolean;
@@ -19,12 +19,16 @@ const AdminContext = createContext<AdminCtx>({ isAdmin: false, loading: true });
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const [isAdmin,  setIsAdmin]  = useState(false);
-  const [loading,  setLoading]  = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { setIsAdmin(false); setLoading(false); return; }
+    if (!user) {
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
 
     isAdminUser(user.uid)
       .then(setIsAdmin)
@@ -32,11 +36,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, [user, authLoading]);
 
-  return (
-    <AdminContext.Provider value={{ isAdmin, loading }}>
-      {children}
-    </AdminContext.Provider>
-  );
+  return <AdminContext.Provider value={{ isAdmin, loading }}>{children}</AdminContext.Provider>;
 }
 
 export function useAdmin() {

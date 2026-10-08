@@ -1,5 +1,9 @@
+# AI Compass robots.txt
+# Learn more: https://www.robotstxt.org/robotstxt.html
+
 User-agent: Googlebot
 Allow: /
+# Crawl-delay is not officially supported by Googlebot (respects Crawl-Delay in Search Console settings)
 
 User-agent: Bingbot
 Allow: /
@@ -10,5 +14,24 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
 User-agent: *
 Allow: /
+# Sensitive / user-specific pages (blocked for crawlers but also noindex in meta)
+Disallow: /account
+Disallow: /admin
+Disallow: /saved
+
+# ── Sitemaps ──────────────────────────────────────────────────
+Sitemap: https://aicompass.app/sitemap.xml
+Sitemap: https://aicompass.app/sitemap-index.xml
+
+# Crawl-delay: 1  (optional; not all crawlers respect this)

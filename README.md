@@ -2,7 +2,7 @@
 
 The name should be AI Compassnot AI finder
 
- The second document is the phase2 ok
+The second document is the phase2 ok
 
 This project was built with [Lovable](https://lovable.dev).
 

@@ -1,15 +1,25 @@
 /**
- * Admin data layer — all Supabase operations for the admin panel.
- * Every function checks the caller is authenticated; role enforcement
- * is also enforced server-side via Supabase RLS + has_role().
- *
- * Public website reads from the static catalog (src/lib/catalog.ts) or
- * live Supabase reads for published tools. Admin writes go through here.
+ * Admin data layer — all Firebase Firestore operations for the admin panel.
+ * Security enforced server-side via Firebase Security Rules (firebase.rules).
  */
-import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
+import {
+  db,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  type DocumentData,
+} from "@/lib/firebase";
 
-/* ── Tool shape stored in catalog_tools.data ───────────────────── */
+/* ── Tool shape stored in Firestore: /tools/{slug} ───────────────── */
 export interface ToolRecord {
   slug: string;
   name: string;
@@ -27,7 +37,7 @@ export interface ToolRecord {
   free_plan: boolean | null;
   open_source: boolean;
   api_available: boolean | null;
-  skill_level: 'Beginner' | 'Advanced';
+  skill_level: "Beginner" | "Advanced";
   key_features: string[];
   strengths: string[];
   limitations: string[];
@@ -40,317 +50,521 @@ export interface ToolRecord {
   is_featured: boolean;
   featured_order: number;
   is_trending: boolean;
-  verification_status: 'verified' | 'partially_verified' | 'needs_review' | 'unverified';
+  verification_status: "verified" | "partially_verified" | "needs_review" | "unverified";
   last_verified_at: string | null;
   verified_by: string | null;
-  status: 'draft' | 'published' | 'archived';
+  verified_by_name: string | null;
+  status: "draft" | "published" | "archived";
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
 }
 
-export type ToolStatus  = ToolRecord['status'];
-export type VerifStatus = ToolRecord['verification_status'];
+export type ToolStatus = ToolRecord["status"];
+export type VerifStatus = ToolRecord["verification_status"];
 
-/* ── helpers ────────────────────────────────────────────────────── */
-function now() { return new Date().toISOString(); }
+function now() {
+  return new Date().toISOString();
+}
 
 function slugify(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /* ── TOOLS ──────────────────────────────────────────────────────── */
 
-/** List all tools (admin sees draft + archived too) */
 export async function adminListTools() {
-  const { data, error } = await supabase
-    .from('catalog_tools')
-    .select('slug, published, featured_order, data')
-    .order('featured_order', { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map(row => ({
-    ...(row.data as unknown as ToolRecord),
-    slug: row.slug,
-    published: row.published,
-    featured_order: row.featured_order,
-  }));
+  const docs = await getDocs(query(collection(db, "tools"), orderBy("featured_order", "asc")));
+  return docs.docs.map((d) => {
+    const data = d.data() as unknown as ToolRecord;
+    return {
+      ...data,
+      slug: d.id,
+      published: data.status === "published",
+    };
+  });
 }
 
-/** Get a single tool by slug */
 export async function adminGetTool(slug: string) {
-  const { data, error } = await supabase
-    .from('catalog_tools')
-    .select('*')
-    .eq('slug', slug)
-    .single();
-  if (error) throw error;
-  return { ...(data.data as unknown as ToolRecord), slug: data.slug, published: data.published };
+  const snap = await getDoc(doc(db, "tools", slug));
+  if (!snap.exists()) throw new Error(`Tool not found: ${slug}`);
+  const data = snap.data() as unknown as ToolRecord;
+  return { ...data, slug: snap.id, published: data.status === "published" };
 }
 
-/** Create a new tool */
-export async function adminCreateTool(tool: Partial<ToolRecord> & { name: string }) {
+export async function adminCreateTool(
+  tool: Partial<ToolRecord> & { name: string },
+  adminUid?: string,
+  adminName?: string,
+) {
   const slug = tool.slug ?? slugify(tool.name);
   const record: ToolRecord = {
     slug,
     name: tool.name,
-    company: tool.company ?? '',
-    tagline: tool.tagline ?? '',
-    short_description: tool.short_description ?? '',
-    long_description: tool.long_description ?? '',
-    official_url: tool.official_url ?? '',
-    official_pricing_url: tool.official_pricing_url ?? '',
-    official_docs_url: tool.official_docs_url ?? '',
+    company: tool.company ?? "",
+    tagline: tool.tagline ?? "",
+    short_description: tool.short_description ?? "",
+    long_description: tool.long_description ?? "",
+    official_url: tool.official_url ?? "",
+    official_pricing_url: tool.official_pricing_url ?? "",
+    official_docs_url: tool.official_docs_url ?? "",
     categories: tool.categories ?? [],
     tags: tool.tags ?? [],
     platforms: tool.platforms ?? [],
-    pricing_type: tool.pricing_type ?? 'Check official website',
+    pricing_type: tool.pricing_type ?? "Check official website",
     free_plan: tool.free_plan ?? null,
     open_source: tool.open_source ?? false,
     api_available: tool.api_available ?? null,
-    skill_level: tool.skill_level ?? 'Beginner',
+    skill_level: tool.skill_level ?? "Beginner",
     key_features: tool.key_features ?? [],
     strengths: tool.strengths ?? [],
     limitations: tool.limitations ?? [],
     target_users: tool.target_users ?? [],
     getting_started: tool.getting_started ?? [],
-    history: tool.history ?? '',
+    history: tool.history ?? "",
     founded_year: tool.founded_year ?? null,
     launch_year: tool.launch_year ?? null,
     alternatives: tool.alternatives ?? [],
     is_featured: tool.is_featured ?? false,
     featured_order: tool.featured_order ?? 999,
     is_trending: tool.is_trending ?? false,
-    verification_status: tool.verification_status ?? 'unverified',
+    verification_status: tool.verification_status ?? "unverified",
     last_verified_at: null,
     verified_by: null,
-    status: tool.status ?? 'draft',
+    verified_by_name: null,
+    status: tool.status ?? "draft",
     created_at: now(),
     updated_at: now(),
+    created_by: adminUid ?? null,
+    updated_by: adminUid ?? null,
   };
-  const { error } = await supabase.from('catalog_tools').insert({
-    slug,
-    published: record.status === 'published',
-    featured_order: record.featured_order,
-    data: record as unknown as Json,
-  });
-  if (error) throw error;
+  await setDoc(doc(db, "tools", slug), record as unknown as DocumentData);
   return record;
 }
 
-/** Update an existing tool's data */
-export async function adminUpdateTool(slug: string, updates: Partial<ToolRecord>) {
+export async function adminUpdateTool(
+  slug: string,
+  updates: Partial<ToolRecord>,
+  adminUid?: string,
+) {
   const existing = await adminGetTool(slug);
-  const merged: ToolRecord = { ...existing, ...updates, slug, updated_at: now() };
-  const { error } = await supabase.from('catalog_tools').update({
-    published: merged.status === 'published',
-    featured_order: merged.featured_order,
-    data: merged as unknown as Json,
-  }).eq('slug', slug);
-  if (error) throw error;
+  const merged: ToolRecord = {
+    ...existing,
+    ...updates,
+    slug,
+    updated_at: now(),
+    updated_by: adminUid ?? existing.updated_by,
+  };
+  const writeData: Partial<ToolRecord> = { ...merged };
+  delete (writeData as { slug?: string }).slug;
+  await updateDoc(doc(db, "tools", slug), writeData as unknown as DocumentData);
   return merged;
 }
 
-/** Soft-delete: archive the tool (never hard-delete by default) */
-export async function adminArchiveTool(slug: string) {
-  return adminUpdateTool(slug, { status: 'archived' });
+export async function adminArchiveTool(slug: string, adminUid?: string) {
+  return adminUpdateTool(slug, { status: "archived" }, adminUid);
 }
 
-/** Hard delete — only call when truly necessary */
 export async function adminDeleteTool(slug: string) {
-  const { error } = await supabase.from('catalog_tools').delete().eq('slug', slug);
-  if (error) throw error;
+  await deleteDoc(doc(db, "tools", slug));
 }
 
-/** Verify a tool — records admin uid + timestamp */
-export async function adminVerifyTool(slug: string, adminUid: string, status: VerifStatus = 'verified') {
-  return adminUpdateTool(slug, {
-    verification_status: status,
-    last_verified_at: now(),
-    verified_by: adminUid,
-  });
+export async function adminVerifyTool(
+  slug: string,
+  adminUid: string,
+  adminName: string,
+  status: VerifStatus = "verified",
+) {
+  return adminUpdateTool(
+    slug,
+    {
+      verification_status: status,
+      last_verified_at: now(),
+      verified_by: adminUid,
+      verified_by_name: adminName,
+    },
+    adminUid,
+  );
 }
 
-/** Un-verify a tool */
-export async function adminUnverifyTool(slug: string) {
-  return adminUpdateTool(slug, {
-    verification_status: 'needs_review',
-    last_verified_at: null,
-    verified_by: null,
-  });
+export async function adminUnverifyTool(slug: string, adminUid?: string) {
+  return adminUpdateTool(
+    slug,
+    {
+      verification_status: "needs_review",
+      last_verified_at: null,
+      verified_by: null,
+      verified_by_name: null,
+    },
+    adminUid,
+  );
 }
 
-/** Toggle featured */
-export async function adminSetFeatured(slug: string, featured: boolean, order?: number) {
-  return adminUpdateTool(slug, {
-    is_featured: featured,
-    featured_order: order ?? (featured ? 0 : 999),
-  });
+export async function adminSetFeatured(
+  slug: string,
+  featured: boolean,
+  order?: number,
+  adminUid?: string,
+) {
+  return adminUpdateTool(
+    slug,
+    {
+      is_featured: featured,
+      featured_order: order ?? (featured ? 0 : 999),
+    },
+    adminUid,
+  );
 }
 
-/** Toggle trending */
-export async function adminSetTrending(slug: string, trending: boolean) {
-  return adminUpdateTool(slug, { is_trending: trending });
+export async function adminSetTrending(slug: string, trending: boolean, adminUid?: string) {
+  return adminUpdateTool(slug, { is_trending: trending }, adminUid);
 }
 
-/** Publish / unpublish */
-export async function adminSetPublished(slug: string, published: boolean) {
-  return adminUpdateTool(slug, { status: published ? 'published' : 'draft' });
+export async function adminSetPublished(slug: string, published: boolean, adminUid?: string) {
+  return adminUpdateTool(slug, { status: published ? "published" : "draft" }, adminUid);
 }
 
 /* ── CATEGORIES ─────────────────────────────────────────────────── */
 
-export async function adminListCategories() {
-  const { data, error } = await supabase
-    .from('catalog_categories')
-    .select('*')
-    .order('name');
-  if (error) throw error;
-  return data ?? [];
+export interface CategoryRecord {
+  slug: string;
+  name: string;
+  description: string;
+  featured: boolean;
 }
 
-export async function adminUpsertCategory(cat: {
-  slug: string; name: string; description: string; featured?: boolean;
-}) {
-  const { error } = await supabase.from('catalog_categories').upsert({
-    slug: cat.slug,
-    name: cat.name,
-    description: cat.description,
-    featured: cat.featured ?? false,
-  });
-  if (error) throw error;
+export async function adminListCategories(): Promise<CategoryRecord[]> {
+  const docs = await getDocs(query(collection(db, "categories"), orderBy("name")));
+  return docs.docs.map((d) => ({
+    slug: d.id,
+    ...(d.data() as Omit<CategoryRecord, "slug">),
+  }));
+}
+
+export async function adminUpsertCategory(cat: CategoryRecord) {
+  const { slug, ...rest } = cat;
+  await setDoc(doc(db, "categories", slug), { ...rest, featured: cat.featured ?? false });
 }
 
 export async function adminDeleteCategory(slug: string) {
-  const { error } = await supabase.from('catalog_categories').delete().eq('slug', slug);
-  if (error) throw error;
+  await deleteDoc(doc(db, "categories", slug));
 }
 
 /* ── TAGS ───────────────────────────────────────────────────────── */
 
-export async function adminListTags() {
-  const { data, error } = await supabase
-    .from('catalog_tags')
-    .select('name')
-    .order('name');
-  if (error) throw error;
-  return (data ?? []).map(r => r.name);
+export async function adminListTags(): Promise<string[]> {
+  const docs = await getDocs(query(collection(db, "tags"), orderBy("name")));
+  return docs.docs.map((d) => d.data().name as string);
 }
 
 export async function adminAddTag(name: string) {
-  const { error } = await supabase.from('catalog_tags').insert({ name });
-  if (error) throw error;
+  await setDoc(doc(db, "tags", name), { name });
 }
 
 export async function adminDeleteTag(name: string) {
-  const { error } = await supabase.from('catalog_tags').delete().eq('name', name);
-  if (error) throw error;
+  await deleteDoc(doc(db, "tags", name));
 }
 
 /* ── SUBMISSIONS ────────────────────────────────────────────────── */
 
-export async function adminListSubmissions(status?: string) {
-  let query = supabase
-    .from('tool_submissions')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (status) query = query.eq('status', status);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+export interface SubmissionRecord {
+  id: string;
+  user_id: string;
+  status: "pending" | "approved" | "rejected";
+  review_note: string;
+  created_at: string;
+  data: Record<string, unknown>;
 }
 
-export async function adminApproveSubmission(id: string, adminUid: string) {
-  // 1. Get submission data
-  const { data: sub, error: fetchErr } = await supabase
-    .from('tool_submissions')
-    .select('*')
-    .eq('id', id)
-    .single();
-  if (fetchErr) throw fetchErr;
-
-  // 2. Create the tool from submission data
-  await adminCreateTool({ ...(sub.data as unknown as Partial<ToolRecord>), status: 'published' });
-
-  // 3. Mark submission approved
-  const { error } = await supabase.from('tool_submissions').update({
-    status: 'approved',
-    review_note: `Approved by admin ${adminUid} at ${now()}`,
-  }).eq('id', id);
-  if (error) throw error;
+export async function adminListSubmissions(status?: string): Promise<SubmissionRecord[]> {
+  let q = query(collection(db, "tool_submissions"), orderBy("created_at", "desc"));
+  if (status) q = query(q, where("status", "==", status));
+  const docs = await getDocs(q);
+  return docs.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<SubmissionRecord, "id">),
+  }));
 }
 
-export async function adminRejectSubmission(id: string, reason: string, adminUid: string) {
-  const { error } = await supabase.from('tool_submissions').update({
-    status: 'rejected',
-    review_note: `Rejected by admin ${adminUid}: ${reason}`,
-  }).eq('id', id);
-  if (error) throw error;
+export async function adminApproveSubmission(id: string, adminUid: string, adminName: string) {
+  const snap = await getDoc(doc(db, "tool_submissions", id));
+  if (!snap.exists()) throw new Error("Submission not found");
+  const sub = snap.data() as Omit<SubmissionRecord, "id">;
+  await adminCreateTool(
+    { ...(sub.data as unknown as Partial<ToolRecord>), status: "published" },
+    adminUid,
+    adminName,
+  );
+  await updateDoc(doc(db, "tool_submissions", id), {
+    status: "approved",
+    review_note: `Approved by ${adminName} (${adminUid}) at ${now()}`,
+  });
+}
+
+export async function adminRejectSubmission(
+  id: string,
+  reason: string,
+  adminUid: string,
+  adminName: string,
+) {
+  await updateDoc(doc(db, "tool_submissions", id), {
+    status: "rejected",
+    review_note: `Rejected by ${adminName}: ${reason}`,
+  });
+}
+
+/* ── FEEDBACK ───────────────────────────────────────────────────── */
+
+export interface FeedbackRecord {
+  id: string;
+  user_id: string | null;
+  user_email: string | null;
+  type: "bug" | "suggestion" | "incorrect_info" | "other";
+  message: string;
+  page_url: string;
+  status: "new" | "reviewed" | "resolved" | "dismissed";
+  admin_response: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
+
+export async function submitFeedback(feedback: {
+  user_id?: string;
+  user_email?: string;
+  type: FeedbackRecord["type"];
+  message: string;
+  page_url: string;
+}) {
+  const docRef = await addDoc(collection(db, "tool_submissions"), {
+    user_id: feedback.user_id ?? "anonymous",
+    status: "pending",
+    review_note: "",
+    created_at: now(),
+    data: {
+      _type: "feedback",
+      type: feedback.type,
+      message: feedback.message,
+      page_url: feedback.page_url,
+      user_email: feedback.user_email ?? null,
+      submitted_at: now(),
+    },
+  });
+  return docRef.id;
+}
+
+export async function adminListFeedback(
+  status?: string,
+): Promise<(SubmissionRecord & { id: string })[]> {
+  const all = await adminListSubmissions(status);
+  return all.filter((s) => {
+    const d = s.data as Record<string, unknown>;
+    return d?._type === "feedback";
+  });
+}
+
+export async function adminRespondFeedback(
+  id: string,
+  response: string,
+  adminUid: string,
+  adminName: string,
+) {
+  await updateDoc(doc(db, "tool_submissions", id), {
+    status: "approved",
+    review_note: `Response from ${adminName}: ${response}`,
+  });
 }
 
 /* ── SITE SETTINGS ──────────────────────────────────────────────── */
 
-export async function adminGetSettings() {
-  const { data, error } = await supabase
-    .from('site_settings')
-    .select('*')
-    .limit(1)
-    .single();
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-  return data ?? { id: '', announcement: '', tagline: '', submissions_open: false };
+export interface SiteSettings {
+  id: string;
+  announcement: string;
+  tagline: string;
+  submissions_open: boolean;
+}
+
+export async function adminGetSettings(): Promise<SiteSettings> {
+  const snap = await getDoc(doc(db, "site_settings", "global"));
+  if (!snap.exists()) {
+    return { id: "", announcement: "", tagline: "", submissions_open: false };
+  }
+  return { id: "global", ...(snap.data() as Omit<SiteSettings, "id">) };
 }
 
 export async function adminSaveSettings(settings: {
-  announcement: string; tagline: string; submissions_open: boolean;
+  announcement: string;
+  tagline: string;
+  submissions_open: boolean;
 }) {
-  // Upsert the single settings row
-  const { error } = await supabase.from('site_settings').upsert({
-    id: 'global',
-    ...settings,
-  });
-  if (error) throw error;
+  await setDoc(doc(db, "site_settings", "global"), { ...settings });
+}
+
+export async function publicGetAnnouncement(): Promise<string | null> {
+  try {
+    const snap = await getDoc(doc(db, "site_settings", "global"));
+    if (!snap.exists()) return null;
+    return (snap.data()?.announcement as string) || null;
+  } catch {
+    return null;
+  }
 }
 
 /* ── DASHBOARD STATS ────────────────────────────────────────────── */
 
 export async function adminGetStats() {
-  const [toolsRes, catsRes, tagsRes, subsRes] = await Promise.all([
-    supabase.from('catalog_tools').select('slug, published, data', { count: 'exact' }),
-    supabase.from('catalog_categories').select('slug', { count: 'exact' }),
-    supabase.from('catalog_tags').select('name', { count: 'exact' }),
-    supabase.from('tool_submissions').select('id, status', { count: 'exact' }),
+  const [toolsDocs, catsDocs, tagsDocs, subsDocs] = await Promise.all([
+    getDocs(collection(db, "tools")),
+    getDocs(collection(db, "categories")),
+    getDocs(collection(db, "tags")),
+    getDocs(collection(db, "tool_submissions")),
   ]);
 
-  const tools    = toolsRes.data ?? [];
-  const subs     = subsRes.data ?? [];
-  const published = tools.filter(t => t.published).length;
-  const drafts    = tools.filter(t => !t.published).length;
-  const needsReview = tools.filter(t => {
-    const d = t.data as unknown as ToolRecord;
-    return d?.verification_status === 'needs_review' || d?.verification_status === 'unverified';
-  }).length;
-  const pendingSubs = subs.filter(s => s.status === 'pending').length;
+  const tools = toolsDocs.docs.map((d) => d.data() as unknown as ToolRecord);
+  const subs = subsDocs.docs.map((d) => ({
+    id: d.id,
+    status: d.data().status as string,
+    data: d.data().data as Record<string, unknown>,
+  }));
+
+  const published = tools.filter((t) => t.status === "published").length;
+  const drafts = tools.filter((t) => t.status === "draft").length;
+  const needsReview = tools.filter(
+    (t) => t.verification_status === "needs_review" || t.verification_status === "unverified",
+  ).length;
+  const toolSubs = subs.filter((s) => {
+    const d = s.data;
+    return d?._type !== "feedback";
+  });
+  const feedbackSubs = subs.filter((s) => {
+    const d = s.data;
+    return d?._type === "feedback";
+  });
 
   return {
-    totalTools:   tools.length,
+    totalTools: tools.length,
     published,
     drafts,
     needsReview,
-    totalCats:    catsRes.count ?? 0,
-    totalTags:    tagsRes.count ?? 0,
-    totalSubs:    subs.length,
-    pendingSubs,
+    totalCats: catsDocs.size,
+    totalTags: tagsDocs.size,
+    totalSubs: toolSubs.length,
+    pendingSubs: toolSubs.filter((s) => s.status === "pending").length,
+    totalFeedback: feedbackSubs.length,
+    newFeedback: feedbackSubs.filter((s) => s.status === "pending").length,
   };
 }
 
 /* ── ROLE CHECK ─────────────────────────────────────────────────── */
 
-/** Returns true if the given Firebase UID has the admin role in Supabase user_roles */
 export async function isAdminUser(uid: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', uid)
-    .eq('role', 'admin')
-    .maybeSingle();
-  if (error) return false;
-  return !!data;
+  try {
+    const snap = await getDoc(doc(db, "admin_users", uid));
+    return snap.exists() && (snap.data()?.role as string) === "admin";
+  } catch {
+    return false;
+  }
+}
+
+/* ── USER PROFILES ──────────────────────────────────────────────── */
+
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  preferences: Record<string, unknown> | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return null;
+    return { uid, ...(snap.data() as Omit<UserProfile, "uid">) };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveUserProfile(profile: UserProfile) {
+  const { uid, ...rest } = profile;
+  await setDoc(
+    doc(db, "users", uid),
+    {
+      ...rest,
+      updated_at: now(),
+    },
+    { merge: true },
+  );
+}
+
+export async function getMySubmissions(uid: string): Promise<SubmissionRecord[]> {
+  const docs = await getDocs(
+    query(
+      collection(db, "tool_submissions"),
+      where("user_id", "==", uid),
+      orderBy("created_at", "desc"),
+    ),
+  );
+  return docs.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<SubmissionRecord, "id">),
+  }));
+}
+
+/* ── BOOKMARKS ──────────────────────────────────────────────────── */
+
+export async function getBookmarks(uid: string): Promise<string[]> {
+  try {
+    const docs = await getDocs(collection(db, "users", uid, "bookmarks"));
+    return docs.docs.map((d) => d.id);
+  } catch {
+    return [];
+  }
+}
+
+export async function addBookmark(uid: string, toolId: string) {
+  await setDoc(doc(db, "users", uid, "bookmarks", toolId), {
+    toolId,
+    createdAt: now(),
+  });
+}
+
+export async function removeBookmark(uid: string, toolId: string) {
+  await deleteDoc(doc(db, "users", uid, "bookmarks", toolId));
+}
+
+/* ── TOOL SUBMISSION (PUBLIC) ───────────────────────────────────── */
+
+export async function submitTool(data: {
+  user_id: string;
+  name: string;
+  official_url: string;
+  company: string;
+  short_description: string;
+  categories: string[];
+  submitter_notes: string;
+}) {
+  const docRef = await addDoc(collection(db, "tool_submissions"), {
+    user_id: data.user_id,
+    status: "pending",
+    review_note: "",
+    created_at: now(),
+    data: {
+      name: data.name.trim(),
+      official_url: data.official_url.trim(),
+      company: data.company.trim(),
+      short_description: data.short_description.trim(),
+      categories: data.categories,
+      submitter_notes: data.submitter_notes.trim(),
+      submitted_at: now(),
+    },
+  });
+  return docRef.id;
 }
