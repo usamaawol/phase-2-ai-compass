@@ -8,6 +8,7 @@ import {
   HeadContent,
   Scripts,
   type ErrorComponentProps,
+  useNavigate,
 } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LogIn, Compass, ArrowRight, Loader2, Ban } from "lucide-react";
@@ -283,6 +284,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
+    const handleSignIn = async () => {
+      await signIn();
+      navigate({ to: location.pathname + (location.search || "") }, { replace: true });
+    };
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
@@ -296,7 +302,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
               You need a free account to access this page. Sign in with Google in one click.
             </p>
             <div className="auth-gate-actions">
-              <Button size="lg" onClick={() => signIn()} className="auth-gate-signin">
+              <Button size="lg" onClick={handleSignIn} className="auth-gate-signin">
                 <LogIn size={18} />
                 Sign in with Google
               </Button>
