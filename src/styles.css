@@ -1907,6 +1907,9 @@
   font-weight: 600;
   margin: 0 0 14px;
   color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .admin-stat-grid {
   display: grid;
@@ -2458,6 +2461,44 @@
   white-space: pre-wrap;
   word-break: break-all;
   margin: 0;
+}
+.admin-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+.admin-search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.admin-search-wrap .admin-search {
+  padding-left: 34px;
+}
+.admin-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-avatar.sm,
+.admin-avatar-fallback.sm {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 12px !important;
+}
+.admin-chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.admin-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 @media (max-width: 900px) {
   .admin-sidebar {

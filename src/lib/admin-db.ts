@@ -492,6 +492,13 @@ export interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   preferences: Record<string, unknown> | null;
+  disabled?: boolean;
+  ban_reason?: string;
+  banned_at?: string;
+  banned_by?: string;
+  last_seen_at?: string;
+  first_seen_at?: string;
+  sign_in_count?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -591,4 +598,267 @@ export async function submitTool(data: {
     },
   });
   return docRef.id;
+}
+
+/* ── ANALYTICS (page_views) ───────────────────────────────────── */
+
+export interface PageViewRecord {
+  id?: string;
+  path: string;
+  title?: string;
+  user_id: string | null;
+  user_email: string | null;
+  session_id: string;
+  referrer: string | null;
+  user_agent: string | null;
+  country_code: string | null;
+  country_name: string | null;
+  path_group: string;
+  hour_bucket: string;
+  day_bucket: string;
+  week_bucket: string;
+  month_bucket: string;
+  created_at: string;
+}
+
+export async function trackPageView(
+  data: Omit<
+    PageViewRecord,
+    | "hour_bucket"
+    | "day_bucket"
+    | "week_bucket"
+    | "month_bucket"
+    | "path_group"
+    | "created_at"
+    | "id"
+  > & { title?: string },
+) {
+  const nowIso = now();
+  const ts = new Date(nowIso);
+  const year = ts.getUTCFullYear();
+  const month = String(ts.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(ts.getUTCDate()).padStart(2, "0");
+  const hour = String(ts.getUTCHours()).padStart(2, "0");
+  const weekNum = getUtcWeekNumber(ts);
+
+  try {
+    await addDoc(collection(db, "page_views"), {
+      ...data,
+      path_group: pathToGroup(data.path),
+      hour_bucket: `${year}-${month}-${day}_${hour}:00`,
+      day_bucket: `${year}-${month}-${day}`,
+      week_bucket: `${year}-W${weekNum}`,
+      month_bucket: `${year}-${month}`,
+      created_at: nowIso,
+    });
+  } catch {
+    /* fire-and-forget, don't crash app if analytics fail */
+  }
+}
+
+function pathToGroup(path: string): string {
+  if (path === "/") return "home";
+  if (path.startsWith("/admin")) return "admin";
+  if (path.startsWith("/tool")) return "tool_detail";
+  if (path.startsWith("/category")) return "category_detail";
+  if (path.startsWith("/categories")) return "categories";
+  if (path.startsWith("/discover")) return "discover";
+  if (path.startsWith("/find")) return "find";
+  if (path.startsWith("/compare")) return "compare";
+  if (path.startsWith("/saved")) return "saved";
+  if (path.startsWith("/account")) return "account";
+  if (path.startsWith("/submit")) return "suggest_tool";
+  if (path.startsWith("/changelog")) return "changelog";
+  if (path.startsWith("/faq")) return "faq";
+  if (path.startsWith("/about")) return "about";
+  return "other";
+}
+
+function getUtcWeekNumber(d: Date): string {
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNr = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const weekDiff = target.valueOf() - firstThursday.valueOf();
+  const week =
+    1 + Math.round((weekDiff / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return String(week).padStart(2, "0");
+}
+
+/* ── ADMIN ANALYTICS QUERIES ────────────────────────────────── */
+
+export async function getAnalytics(): Promise<{
+  total_views: number;
+  unique_sessions: number;
+  unique_visitors: number;
+  logged_in_users: number;
+  total_views_last_7_days: { day: string; views: number; unique: number }[];
+  top_pages: { path: string; views: number }[];
+  user_signups_last_7: number;
+}> {
+  const today = new Date();
+  const daysBack7 = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const q = query(collection(db, "page_views"), orderBy("created_at", "desc"), limit(2000));
+  const docs = await getDocs(q);
+  const all = docs.docs.map((d) => d.data() as PageViewRecord);
+
+  const sessions = new Set<string>();
+  const visitors = new Set<string>();
+  const loggedUsers = new Set<string>();
+  const pagesMap = new Map<string, number>();
+  const dayMap = new Map<string, { views: number; unique: Set<string> }>();
+  let signups = 0;
+
+  for (const pv of all) {
+    sessions.add(pv.session_id);
+    const visitorKey = pv.user_id ?? `anon_${pv.session_id}`;
+    visitors.add(visitorKey);
+    if (pv.user_id) loggedUsers.add(pv.user_id);
+    pagesMap.set(pv.path, (pagesMap.get(pv.path) ?? 0) + 1);
+
+    const pvDate = new Date(pv.created_at);
+    if (pvDate >= daysBack7 && pvDate <= today) {
+      const dayKey = pv.day_bucket;
+      if (!dayMap.has(dayKey)) dayMap.set(dayKey, { views: 0, unique: new Set() });
+      const bucket = dayMap.get(dayKey)!;
+      bucket.views += 1;
+      bucket.unique.add(visitorKey);
+    }
+  }
+
+  const userDocs = await getDocs(collection(db, "users"));
+  for (const u of userDocs.docs) {
+    const created = (u.data().created_at ?? u.data().first_seen_at) as string | undefined;
+    if (created && new Date(created) >= daysBack7) signups++;
+  }
+
+  const daily = Array.from(dayMap.entries())
+    .map(([day, data]) => ({ day, views: data.views, unique: data.unique.size }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+
+  const topPages = Array.from(pagesMap.entries())
+    .map(([path, views]) => ({ path, views }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10);
+
+  return {
+    total_views: all.length,
+    unique_sessions: sessions.size,
+    unique_visitors: visitors.size,
+    logged_in_users: loggedUsers.size,
+    total_views_last_7_days: daily,
+    top_pages,
+    user_signups_last_7: signups,
+  };
+}
+
+/* ── ADMIN USERS MANAGEMENT (ban, list) ───────────────────────── */
+
+export interface AdminUserItem {
+  uid: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  disabled: boolean;
+  ban_reason?: string;
+  banned_at?: string;
+  banned_by?: string;
+  last_seen_at?: string;
+  first_seen_at?: string;
+  sign_in_count: number;
+  created_at?: string;
+  is_admin: boolean;
+}
+
+export async function adminListUsers(): Promise<AdminUserItem[]> {
+  const [usersSnap, adminSnap] = await Promise.all([
+    getDocs(query(collection(db, "users"), orderBy("created_at", "desc"), limit(500))),
+    getDocs(collection(db, "admin_users")),
+  ]);
+  const adminUids = new Set(adminSnap.docs.map((d) => d.id));
+  return usersSnap.docs.map((d) => {
+    const ddata = d.data();
+    return {
+      uid: d.id,
+      email: (ddata.email as string) ?? null,
+      display_name: (ddata.display_name as string) ?? null,
+      avatar_url: (ddata.avatar_url as string) ?? null,
+      disabled: !!ddata.disabled,
+      ban_reason: ddata.ban_reason as string | undefined,
+      banned_at: ddata.banned_at as string | undefined,
+      banned_by: ddata.banned_by as string | undefined,
+      last_seen_at: ddata.last_seen_at as string | undefined,
+      first_seen_at: ddata.first_seen_at as string | undefined,
+      sign_in_count: (ddata.sign_in_count as number) ?? 0,
+      created_at: ddata.created_at as string | undefined,
+      is_admin: adminUids.has(d.id),
+    };
+  });
+}
+
+export async function adminBanUser(
+  uid: string,
+  reason: string,
+  adminUid: string,
+  adminName: string,
+) {
+  await updateDoc(doc(db, "users", uid), {
+    disabled: true,
+    ban_reason: reason.trim(),
+    banned_at: now(),
+    banned_by: adminName,
+    banned_by_uid: adminUid,
+    updated_at: now(),
+  });
+}
+
+export async function adminUnbanUser(uid: string, adminUid: string, adminName: string) {
+  await updateDoc(doc(db, "users", uid), {
+    disabled: false,
+    ban_reason: null,
+    banned_at: null,
+    banned_by: null,
+    banned_by_uid: null,
+    unbanned_at: now(),
+    unbanned_by: adminName,
+    unbanned_by_uid: adminUid,
+    updated_at: now(),
+  });
+}
+
+export async function recordUserActivity(
+  uid: string,
+  user: {
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+  },
+) {
+  const snap = await getDoc(doc(db, "users", uid));
+  const existing = snap.exists() ? snap.data() : {};
+  const signInCount = ((existing.sign_in_count as number) ?? 0) + 1;
+  await setDoc(
+    doc(db, "users", uid),
+    {
+      email: user.email,
+      display_name: user.displayName,
+      avatar_url: user.photoURL,
+      last_seen_at: now(),
+      first_seen_at: existing.first_seen_at ?? existing.created_at ?? now(),
+      created_at: existing.created_at ?? now(),
+      sign_in_count: signInCount,
+      updated_at: now(),
+    },
+    { merge: true },
+  );
+}
+
+export async function isUserBanned(uid: string): Promise<boolean> {
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) return false;
+    return !!snap.data().disabled;
+  } catch {
+    return false;
+  }
 }

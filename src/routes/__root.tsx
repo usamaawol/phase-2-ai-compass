@@ -10,8 +10,8 @@ import {
   type ErrorComponentProps,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { LogIn, Compass, ArrowRight, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { LogIn, Compass, ArrowRight, Loader2, Ban } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
 import { Footer } from "@/components/compass/shared";
@@ -257,7 +257,7 @@ function RootComponent() {
   );
 }
 
-const PUBLIC_PATHS = ["/"];
+const PUBLIC_PATHS = ["/", "/privacy", "/terms"];
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading, signIn } = useAuth();
@@ -317,26 +317,111 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+let SESSION_CACHE: string | null = null;
+function getSessionId(): string {
+  if (typeof window === "undefined") return "ssr-" + Math.random().toString(36).slice(2, 10);
+  if (!SESSION_CACHE) {
+    try {
+      SESSION_CACHE = window.sessionStorage.getItem("ac_sid");
+      if (!SESSION_CACHE) {
+        SESSION_CACHE = "s-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        window.sessionStorage.setItem("ac_sid", SESSION_CACHE);
+      }
+    } catch {
+      SESSION_CACHE = "s-" + Math.random().toString(36).slice(2, 10);
+    }
+  }
+  return SESSION_CACHE;
+}
+
+function PageViewTracker() {
+  const location = useLocation();
+  const { user } = useAuth();
+  const sessionId = useMemo(() => getSessionId(), []);
+  const lastTracked = useState<string>("");
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const key = location.pathname + location.search;
+    if (lastTracked[0] === key) return;
+    lastTracked[1](key);
+
+    import("@/lib/admin-db")
+      .then(({ trackPageView }) => {
+        trackPageView({
+          path: location.pathname,
+          title: typeof document !== "undefined" ? document.title : "",
+          user_id: user?.uid ?? null,
+          user_email: user?.email ?? null,
+          session_id: sessionId,
+          referrer: typeof document !== "undefined" ? document.referrer || null : null,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          country_code: null,
+          country_name: null,
+        });
+      })
+      .catch(() => {});
+  }, [location, user, sessionId, lastTracked]);
+
+  return null;
+}
+
+function BannedNotice() {
+  const { banned, banMessage } = useAuth();
+  if (!banned) return null;
+  return (
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "#4a0e0e",
+        color: "#ffb8b8",
+        padding: "10px 16px",
+        textAlign: "center",
+        borderBottom: "2px solid #8f1c1c",
+        fontSize: 14,
+        fontWeight: 600,
+      }}
+    >
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <Ban size={16} />
+        Account disabled — {banMessage || "Contact site admin."}
+      </div>
+    </div>
+  );
+}
+
 function AppShellInner() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
 
   if (isAdmin) {
-    return <Outlet />;
+    return (
+      <>
+        <PageViewTracker />
+        <BannedNotice />
+        <Outlet />
+      </>
+    );
   }
 
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <div className="page-area">
-        <AnnouncementBanner />
-        <main>
-          <Outlet />
-        </main>
-        <Footer />
-        <FeedbackButton />
+    <>
+      <PageViewTracker />
+      <BannedNotice />
+      <div className="app-layout">
+        <Sidebar />
+        <div className="page-area">
+          <AnnouncementBanner />
+          <main>
+            <Outlet />
+          </main>
+          <Footer />
+          <FeedbackButton />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

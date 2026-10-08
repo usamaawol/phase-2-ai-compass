@@ -24,12 +24,14 @@ import { Route as SavedRouteImport } from './routes/saved'
 import { Route as SubmitRouteImport } from './routes/submit'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
 import { Route as AdminFeaturedRouteImport } from './routes/admin/featured'
 import { Route as AdminFeedbackRouteImport } from './routes/admin/feedback'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin/submissions'
 import { Route as AdminTagsRouteImport } from './routes/admin/tags'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ToolSlugRouteImport } from './routes/tool.$slug'
 import { Route as AdminToolsIndexRouteImport } from './routes/admin/tools/index'
@@ -111,6 +113,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -139,6 +146,11 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
 const AdminTagsRoute = AdminTagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -182,12 +194,14 @@ export interface FileRoutesByFullPath {
   '/saved': typeof SavedRoute
   '/submit': typeof SubmitRoute
   '/terms': typeof TermsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/featured': typeof AdminFeaturedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/tags': typeof AdminTagsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/tool/$slug': typeof ToolSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -209,12 +223,14 @@ export interface FileRoutesByTo {
   '/saved': typeof SavedRoute
   '/submit': typeof SubmitRoute
   '/terms': typeof TermsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/featured': typeof AdminFeaturedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/tags': typeof AdminTagsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/tool/$slug': typeof ToolSlugRoute
   '/admin': typeof AdminIndexRoute
@@ -238,12 +254,14 @@ export interface FileRoutesById {
   '/saved': typeof SavedRoute
   '/submit': typeof SubmitRoute
   '/terms': typeof TermsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/featured': typeof AdminFeaturedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/admin/tags': typeof AdminTagsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/tool/$slug': typeof ToolSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -268,12 +286,14 @@ export interface FileRouteTypes {
     | '/saved'
     | '/submit'
     | '/terms'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/feedback'
     | '/admin/settings'
     | '/admin/submissions'
     | '/admin/tags'
+    | '/admin/users'
     | '/category/$slug'
     | '/tool/$slug'
     | '/admin/'
@@ -295,12 +315,14 @@ export interface FileRouteTypes {
     | '/saved'
     | '/submit'
     | '/terms'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/feedback'
     | '/admin/settings'
     | '/admin/submissions'
     | '/admin/tags'
+    | '/admin/users'
     | '/category/$slug'
     | '/tool/$slug'
     | '/admin'
@@ -323,12 +345,14 @@ export interface FileRouteTypes {
     | '/saved'
     | '/submit'
     | '/terms'
+    | '/admin/analytics'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/feedback'
     | '/admin/settings'
     | '/admin/submissions'
     | '/admin/tags'
+    | '/admin/users'
     | '/category/$slug'
     | '/tool/$slug'
     | '/admin/'
@@ -463,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/categories'
@@ -505,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTagsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -544,12 +582,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminFeaturedRoute: typeof AdminFeaturedRoute
   AdminFeedbackRoute: typeof AdminFeedbackRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
   AdminTagsRoute: typeof AdminTagsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminToolsNewRoute: typeof AdminToolsNewRoute
   AdminToolsIndexRoute: typeof AdminToolsIndexRoute
@@ -557,12 +597,14 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminFeaturedRoute: AdminFeaturedRoute,
   AdminFeedbackRoute: AdminFeedbackRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
   AdminTagsRoute: AdminTagsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminToolsNewRoute: AdminToolsNewRoute,
   AdminToolsIndexRoute: AdminToolsIndexRoute,

@@ -13,6 +13,8 @@ import {
   ShieldAlert,
   Loader2,
   MessageSquare,
+  BarChart3,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
@@ -25,6 +27,8 @@ interface AdminNavItem {
 
 const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/tools", label: "AI Tools", icon: Bot },
   { to: "/admin/categories", label: "Categories", icon: LayoutGrid },
   { to: "/admin/tags", label: "Tags", icon: Tags },

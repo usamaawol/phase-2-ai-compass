@@ -107,23 +107,38 @@ service cloud.firestore {
     // ── User profiles ───────────────────────────────────────────
     // Each user can read/write their own profile only.
     // Admins can read all for moderation.
+    // BAN ENFORCEMENT: users cannot modify ban/role fields themselves.
+    // Only admins can set disabled, ban_reason, banned_at, etc.
     match /users/{uid} {
       allow read:   if isOwner(uid) || isAdmin();
 
       allow create: if isOwner(uid)
                     && request.resource.data.keys().hasOnly(
-                        ['uid','email','displayName','display_name','photoURL','avatar_url','bio','preferences','createdAt','updatedAt','lastLoginAt']
+                        ['uid','email','displayName','display_name','photoURL','avatar_url','bio','preferences','createdAt','updatedAt','lastLoginAt','last_seen_at','first_seen_at','sign_in_count','created_at','updated_at']
                       )
                     && (!('displayName' in request.resource.data) || isValidString(request.resource.data.displayName, 100))
                     && (!('display_name' in request.resource.data) || isValidString(request.resource.data.display_name, 100))
                     && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email);
 
-      allow update: if isOwner(uid)
-                    && request.resource.data.uid == uid  // can't change uid
+      allow update: if (isOwner(uid) && !isAdmin())
+                    // Owner updates — cannot touch ban/admin fields at all
+                    && request.resource.data.uid == uid
+                    && !(('disabled' in request.resource.data) && request.resource.data.disabled == true)
+                    && !('ban_reason' in request.resource.data)
+                    && !('banned_at' in request.resource.data)
+                    && !('banned_by' in request.resource.data)
+                    && !('banned_by_uid' in request.resource.data)
+                    && !('unbanned_at' in request.resource.data)
+                    && !('unbanned_by' in request.resource.data)
+                    && !('unbanned_by_uid' in request.resource.data)
                     && (!('displayName' in request.resource.data) || isValidString(request.resource.data.displayName, 100))
                     && (!('display_name' in request.resource.data) || isValidString(request.resource.data.display_name, 100))
                     && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email)
                     && (!('bio' in request.resource.data) || isValidString(request.resource.data.bio, 500));
+
+      allow update: if isAdmin()
+                    // Admin updates — may change ban fields; cannot change uid
+                    && (!('uid' in request.resource.data) || request.resource.data.uid == uid);
 
       allow delete: if isOwner(uid) || isAdmin();
 
@@ -186,6 +201,25 @@ service cloud.firestore {
     match /analytics/{eventId} {
       allow create: if true;
       allow read, write: if isAdmin();
+    }
+
+    // ── Page Views (fire-and-forget anonymous writes, admin-only reads) ─
+    // Used by trackPageView() in admin-db.ts. Anyone (including unauthenticated)
+    // may CREATE page views. Only admins may read/list page views.
+    // No updates or deletes allowed (append-only audit log).
+    match /page_views/{pvId} {
+      allow create: if request.resource.data.keys().hasAll(
+                         ['path','session_id','path_group','hour_bucket','day_bucket','week_bucket','month_bucket','created_at']
+                       )
+                    && isValidString(request.resource.data.path, 500)
+                    && isValidString(request.resource.data.session_id, 200)
+                    && isValidString(request.resource.data.path_group, 50)
+                    && isValidString(request.resource.data.hour_bucket, 20)
+                    && isValidString(request.resource.data.day_bucket, 20)
+                    && isValidString(request.resource.data.week_bucket, 20)
+                    && isValidString(request.resource.data.month_bucket, 20);
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ── Deny everything else ────────────────────────────────────
