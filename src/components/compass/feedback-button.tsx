@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { submitFeedback, type FeedbackRecord } from "@/lib/admin-db";
 
 const TYPES: { value: FeedbackRecord["type"]; label: string }[] = [
+  { value: "suggest_tool", label: "🤖 Suggest an AI Tool" },
   { value: "suggestion", label: "💡 Suggestion" },
   { value: "bug", label: "🐛 Bug report" },
   { value: "incorrect_info", label: "⚠️ Incorrect info" },
@@ -18,7 +19,7 @@ const TYPES: { value: FeedbackRecord["type"]; label: string }[] = [
 export function FeedbackButton() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<FeedbackRecord["type"]>("suggestion");
+  const [type, setType] = useState<FeedbackRecord["type"]>("suggest_tool");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -108,17 +109,19 @@ export function FeedbackButton() {
                 <textarea
                   className="feedback-textarea"
                   placeholder={
-                    type === "suggestion"
-                      ? "What would make AI Compass better?"
-                      : type === "bug"
-                        ? "What went wrong? What did you expect?"
-                        : type === "incorrect_info"
-                          ? "Which tool? What information is wrong?"
-                          : "Tell us anything…"
+                    type === "suggest_tool"
+                      ? "Tell us about the AI tool:\n• Tool name\n• Official website URL (if available)\n• What it does and why you recommend it\n• Which category it fits best"
+                      : type === "suggestion"
+                        ? "What would make AI Compass better?"
+                        : type === "bug"
+                          ? "What went wrong? What did you expect?"
+                          : type === "incorrect_info"
+                            ? "Which tool? What information is wrong?"
+                            : "Tell us anything…"
                   }
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
+                  rows={6}
                   required
                   autoFocus
                 />

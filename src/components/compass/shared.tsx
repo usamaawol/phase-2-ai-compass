@@ -127,7 +127,7 @@ export function Footer() {
             <div className="footer-nav-col">
               <span className="footer-nav-heading">Community</span>
               <Link className="footer-nav-link" to="/submit">
-                Submit a tool
+                Suggest a tool
               </Link>
               <Link className="footer-nav-link" to="/changelog">
                 Changelog

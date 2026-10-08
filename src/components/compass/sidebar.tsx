@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Compass,
@@ -17,13 +17,13 @@ import {
   ShieldCheck,
   Sparkles,
   Lightbulb,
-  Send,
   User,
   ScrollText,
   Bookmark,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "./theme-provider";
+import { isAdminUser } from "@/lib/admin-db";
 
 interface NavItem {
   to: string;
@@ -39,7 +39,6 @@ const NAV: NavItem[] = [
   { to: "/categories", label: "Categories", icon: LayoutGrid, protected: true },
   { to: "/compare", label: "Compare", icon: GitCompareArrows, protected: true },
   { to: "/saved", label: "Saved", icon: Bookmark, protected: true },
-  { to: "/submit", label: "Submit Tool", icon: Send, protected: true },
   { to: "/changelog", label: "Changelog", icon: ScrollText },
   { to: "/faq", label: "FAQ", icon: Info },
   { to: "/about", label: "About", icon: Info },
@@ -156,6 +155,21 @@ function NavContent({
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const location = useLocation();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+
+  useEffect(() => {
+    setAdminLoading(true);
+    if (!user) {
+      setIsAdmin(false);
+      setAdminLoading(false);
+      return;
+    }
+    isAdminUser(user.uid)
+      .then((admin) => setIsAdmin(admin))
+      .catch(() => setIsAdmin(false))
+      .finally(() => setAdminLoading(false));
+  }, [user]);
 
   function handleClick(e: React.MouseEvent, item: NavItem) {
     if (item.protected && !user) {
@@ -242,10 +256,14 @@ function NavContent({
                   {user.displayName ?? user.email ?? "User"}
                 </Link>
                 <div className="nav-user-actions">
-                  <Link to="/admin" className="nav-admin-link" onClick={onClose}>
-                    <ShieldCheck size={10} /> Admin
-                  </Link>
-                  <span className="nav-user-dot">·</span>
+                  {!adminLoading && isAdmin && (
+                    <>
+                      <Link to="/admin" className="nav-admin-link" onClick={onClose}>
+                        <ShieldCheck size={10} /> Admin
+                      </Link>
+                      <span className="nav-user-dot">·</span>
+                    </>
+                  )}
                   <Link to="/account" className="nav-admin-link" onClick={onClose}>
                     <User size={10} /> Account
                   </Link>

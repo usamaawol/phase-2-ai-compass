@@ -281,13 +281,14 @@ export interface SubmissionRecord {
 }
 
 export async function adminListSubmissions(status?: string): Promise<SubmissionRecord[]> {
-  let q = query(collection(db, "tool_submissions"), orderBy("created_at", "desc"));
-  if (status) q = query(q, where("status", "==", status));
+  const q = query(collection(db, "tool_submissions"), orderBy("created_at", "desc"));
   const docs = await getDocs(q);
-  return docs.docs.map((d) => ({
+  const all = docs.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Omit<SubmissionRecord, "id">),
   }));
+  if (!status || status === "all") return all;
+  return all.filter((s) => s.status === status);
 }
 
 export async function adminApproveSubmission(id: string, adminUid: string, adminName: string) {
@@ -323,7 +324,7 @@ export interface FeedbackRecord {
   id: string;
   user_id: string | null;
   user_email: string | null;
-  type: "bug" | "suggestion" | "incorrect_info" | "other";
+  type: "bug" | "suggestion" | "incorrect_info" | "other" | "suggest_tool";
   message: string;
   page_url: string;
   status: "new" | "reviewed" | "resolved" | "dismissed";
@@ -340,31 +341,32 @@ export async function submitFeedback(feedback: {
   message: string;
   page_url: string;
 }) {
-  const docRef = await addDoc(collection(db, "tool_submissions"), {
-    user_id: feedback.user_id ?? "anonymous",
-    status: "pending",
-    review_note: "",
+  const docRef = await addDoc(collection(db, "feedback"), {
+    user_id: feedback.user_id ?? null,
+    user_email: feedback.user_email ?? null,
+    type: feedback.type,
+    message: feedback.message.trim(),
+    page_url: feedback.page_url,
+    status: "new",
+    admin_response: null,
     created_at: now(),
-    data: {
-      _type: "feedback",
-      type: feedback.type,
-      message: feedback.message,
-      page_url: feedback.page_url,
-      user_email: feedback.user_email ?? null,
-      submitted_at: now(),
-    },
+    reviewed_at: null,
+    reviewed_by: null,
   });
   return docRef.id;
 }
 
 export async function adminListFeedback(
   status?: string,
-): Promise<(SubmissionRecord & { id: string })[]> {
-  const all = await adminListSubmissions(status);
-  return all.filter((s) => {
-    const d = s.data as Record<string, unknown>;
-    return d?._type === "feedback";
-  });
+): Promise<(FeedbackRecord & { id: string })[]> {
+  const q = query(collection(db, "feedback"), orderBy("created_at", "desc"));
+  const docs = await getDocs(q);
+  const all = docs.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<FeedbackRecord, "id">),
+  }));
+  if (!status || status === "all") return all;
+  return all.filter((f) => f.status === status);
 }
 
 export async function adminRespondFeedback(
@@ -373,9 +375,25 @@ export async function adminRespondFeedback(
   adminUid: string,
   adminName: string,
 ) {
-  await updateDoc(doc(db, "tool_submissions", id), {
-    status: "approved",
-    review_note: `Response from ${adminName}: ${response}`,
+  await updateDoc(doc(db, "feedback", id), {
+    status: "reviewed",
+    admin_response: response,
+    reviewed_at: now(),
+    reviewed_by: adminName,
+    adminUid,
+  });
+}
+
+export async function adminUpdateFeedbackStatus(
+  id: string,
+  status: FeedbackRecord["status"],
+  adminUid: string,
+  adminName: string,
+) {
+  await updateDoc(doc(db, "feedback", id), {
+    status,
+    reviewed_at: now(),
+    reviewed_by: adminName,
   });
 }
 
@@ -417,18 +435,22 @@ export async function publicGetAnnouncement(): Promise<string | null> {
 /* ── DASHBOARD STATS ────────────────────────────────────────────── */
 
 export async function adminGetStats() {
-  const [toolsDocs, catsDocs, tagsDocs, subsDocs] = await Promise.all([
+  const [toolsDocs, catsDocs, tagsDocs, subsDocs, feedbackDocs] = await Promise.all([
     getDocs(collection(db, "tools")),
     getDocs(collection(db, "categories")),
     getDocs(collection(db, "tags")),
     getDocs(collection(db, "tool_submissions")),
+    getDocs(collection(db, "feedback")),
   ]);
 
   const tools = toolsDocs.docs.map((d) => d.data() as unknown as ToolRecord);
   const subs = subsDocs.docs.map((d) => ({
     id: d.id,
     status: d.data().status as string,
-    data: d.data().data as Record<string, unknown>,
+  }));
+  const feedback = feedbackDocs.docs.map((d) => ({
+    id: d.id,
+    status: d.data().status as string,
   }));
 
   const published = tools.filter((t) => t.status === "published").length;
@@ -436,14 +458,6 @@ export async function adminGetStats() {
   const needsReview = tools.filter(
     (t) => t.verification_status === "needs_review" || t.verification_status === "unverified",
   ).length;
-  const toolSubs = subs.filter((s) => {
-    const d = s.data;
-    return d?._type !== "feedback";
-  });
-  const feedbackSubs = subs.filter((s) => {
-    const d = s.data;
-    return d?._type === "feedback";
-  });
 
   return {
     totalTools: tools.length,
@@ -452,10 +466,10 @@ export async function adminGetStats() {
     needsReview,
     totalCats: catsDocs.size,
     totalTags: tagsDocs.size,
-    totalSubs: toolSubs.length,
-    pendingSubs: toolSubs.filter((s) => s.status === "pending").length,
-    totalFeedback: feedbackSubs.length,
-    newFeedback: feedbackSubs.filter((s) => s.status === "pending").length,
+    totalSubs: subs.length,
+    pendingSubs: subs.filter((s) => s.status === "pending").length,
+    totalFeedback: feedback.length,
+    newFeedback: feedback.filter((s) => s.status === "new").length,
   };
 }
 
@@ -540,7 +554,11 @@ export async function removeBookmark(uid: string, toolId: string) {
   await deleteDoc(doc(db, "users", uid, "bookmarks", toolId));
 }
 
-/* ── TOOL SUBMISSION (PUBLIC) ───────────────────────────────────── */
+/* ── TOOL SUBMISSION (ADMIN-ONLY) ─────────────────────────────────
+ * Regular users cannot submit AI tools directly. They must use Feedback
+ * with the "suggest_tool" type. Admins manage tools and manual submissions
+ * via the Admin Dashboard (/admin/tools/new) only.
+ */
 
 export async function submitTool(data: {
   user_id: string;
@@ -551,6 +569,12 @@ export async function submitTool(data: {
   categories: string[];
   submitter_notes: string;
 }) {
+  const isAdmin = await isAdminUser(data.user_id);
+  if (!isAdmin) {
+    throw new Error(
+      "Access denied: Tool submissions are admin-only. Regular users should use Feedback → 'Suggest an AI Tool' instead.",
+    );
+  }
   const docRef = await addDoc(collection(db, "tool_submissions"), {
     user_id: data.user_id,
     status: "pending",

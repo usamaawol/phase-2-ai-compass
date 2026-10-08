@@ -32,17 +32,17 @@ const ENTRIES: Entry[] = [
     date: "October 2026",
     version: "2.6",
     type: "feature",
-    title: "Compare, Find, Submit & Account",
+    title: "Compare, Find, Feedback & Account",
     items: [
       "Working side-by-side tool comparison (up to 4 tools, URL state)",
       "Quick-start comparison presets (ChatGPT vs Claude, etc.)",
       "Find my AI — describe a task, get matched tools instantly",
       "Transparent keyword/category/tag matching scoring",
-      "Submit a Tool — signed-in users can submit tools for review",
-      "Account page — view profile and submission history",
-      "Bookmark tools — saved to localStorage per user",
+      "Suggest an AI Tool — users send ideas via Feedback channel (admin review)",
+      "Account page — view profile and saved bookmarks",
+      "Bookmark tools — saved to Firestore per user account",
       "Announcement banner from site settings",
-      "Admin dashboard — full catalog management",
+      "Admin dashboard — full catalog management + feedback review",
     ],
   },
   {
@@ -52,7 +52,7 @@ const ENTRIES: Entry[] = [
     title: "Sidebar navigation, Firebase Auth & SEO",
     items: [
       "Fixed left sidebar replaces top navbar",
-      "Home, Discover, Find, Categories, Compare, Submit, About nav items",
+      "Home, Discover, Find, Categories, Compare, Suggest, About nav items",
       "Google sign-in via Firebase — Home is public, other pages require login",
       "Login modal with Google OAuth button",
       "Theme toggle (dark/light) moved to sidebar bottom",
@@ -93,7 +93,7 @@ const ENTRIES: Entry[] = [
 ];
 
 const ROADMAP = [
-  { status: "planned", label: "Real-time Supabase catalog (admin-editable without code changes)" },
+  { status: "planned", label: "Real-time Firebase catalog (admin-editable without code changes)" },
   { status: "planned", label: "Tool comparison improvements — export as table, share URL" },
   { status: "planned", label: "User profile page with avatar upload" },
   { status: "planned", label: "Trending & recently added sections on homepage" },
@@ -157,7 +157,7 @@ export default function ChangelogPage() {
           </ul>
           <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
             <Link to="/submit" className="section-link">
-              Missing a tool? Submit it <ArrowUpRight size={13} />
+              Missing a tool? Suggest it <ArrowUpRight size={13} />
             </Link>
           </div>
         </aside>

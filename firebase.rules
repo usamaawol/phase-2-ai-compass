@@ -139,21 +139,19 @@ service cloud.firestore {
     }
 
     // ── Tool submissions ────────────────────────────────────────
-    // Signed-in users can create and read their own submissions.
+    // ONLY ADMINS can create tool submissions or manage imported records.
+    // Regular users cannot submit AI tools directly — they must use the
+    // Feedback channel ("Suggest an AI Tool" type) which stores to /feedback.
     // Admins can read all and update status/review_note.
     match /tool_submissions/{subId} {
-      allow read:   if (resource.data.user_id == request.auth.uid) || isAdmin();
+      allow read:   if isAdmin();
 
-      allow create: if isSignedIn()
-                    && request.resource.data.user_id == request.auth.uid
-                    && request.resource.data.status == 'pending'
-                    && request.resource.data.data.keys().hasAny(['name', 'official_url'])
-                    && isValidString(request.resource.data.data.name, 200)
-                    && isValidUrl(request.resource.data.data.official_url);
+      allow create: if isAdmin()
+                    && request.resource.data.status in ['pending', 'approved', 'rejected'];
 
       allow update: if isAdmin()
                     // Admin can only change status + review_note, never user_id or submitted data
-                    && assertNoFieldChange(['user_id', 'data', 'created_at'], resource.data, request.resource.data);
+                    && assertNoFieldChange(['user_id', 'created_at'], resource.data, request.resource.data);
 
       allow delete: if isAdmin();
     }
@@ -171,9 +169,16 @@ service cloud.firestore {
                    && isValidString(request.resource.data.tagline, 200);
     }
 
-    // ── Feedback (stored directly for potential future use) ─────
+    // ── Feedback / Suggestions (user submitted ideas, bugs, tool suggestions) ─────
+    // Anyone (including anonymous) can create feedback.
+    // Only admins can read, update, or delete feedback for moderation.
     match /feedback/{fbId} {
-      allow create: if true; // anonymous allowed
+      allow create: if request.resource.data.keys().hasAll(['type', 'message', 'page_url', 'created_at'])
+                    && request.resource.data.type in ['bug', 'suggestion', 'incorrect_info', 'other', 'suggest_tool']
+                    && isValidString(request.resource.data.message, 5000)
+                    && isValidString(request.resource.data.page_url, 500)
+                    && (!('user_email' in request.resource.data) || isValidEmail(request.resource.data.user_email));
+
       allow read, update, delete: if isAdmin();
     }
 

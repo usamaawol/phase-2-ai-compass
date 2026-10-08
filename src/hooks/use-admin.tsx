@@ -1,6 +1,13 @@
 /**
  * useAdmin — provides { isAdmin, loading } based on the current Firebase user
- * and their Supabase user_roles row.
+ * and their admin_users Firestore document (/admin_users/{uid} with role='admin').
+ *
+ * How to grant admin access:
+ *   1. User signs in first (creates their account in Firebase Auth)
+ *   2. In Firebase Console → Firestore → create collection "admin_users"
+ *   3. Add document: Document ID = user's UID (from Authentication → Users)
+ *   4. Add field: role = "admin" (string)
+ *   5. Optional: grantedAt, grantedBy, name, email fields for audit trail
  *
  * Usage:
  *   const { isAdmin, loading } = useAdmin();
