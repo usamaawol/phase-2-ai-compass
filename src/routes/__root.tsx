@@ -8,9 +8,8 @@ import {
   HeadContent,
   Scripts,
   type ErrorComponentProps,
-  useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LogIn, Compass, ArrowRight, Loader2, Ban } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
@@ -319,7 +318,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 let SESSION_CACHE: string | null = null;
 function getSessionId(): string {
-  if (typeof window === "undefined") return "ssr-" + Math.random().toString(36).slice(2, 10);
+  if (typeof window === "undefined") return "";
   if (!SESSION_CACHE) {
     try {
       SESSION_CACHE = window.sessionStorage.getItem("ac_sid");
@@ -337,31 +336,45 @@ function getSessionId(): string {
 function PageViewTracker() {
   const location = useLocation();
   const { user } = useAuth();
-  const sessionId = useMemo(() => getSessionId(), []);
-  const lastTracked = useState<string>("");
+  const sessionIdRef = useRef<string>("");
+  const lastTrackedRef = useRef<string>("");
+  const trackModuleRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    const key = location.pathname + location.search;
-    if (lastTracked[0] === key) return;
-    lastTracked[1](key);
+    if (typeof window === "undefined") return;
+    if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
 
-    import("@/lib/admin-db")
-      .then(({ trackPageView }) => {
-        trackPageView({
+    const key = location.pathname + (location.search || "");
+    if (lastTrackedRef.current === key) return;
+    lastTrackedRef.current = key;
+
+    const title = typeof document !== "undefined" ? document.title : "";
+    const referrer = typeof document !== "undefined" ? document.referrer || null : null;
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : null;
+
+    if (!trackModuleRef.current) {
+      trackModuleRef.current = import("@/lib/admin-db").then(() => {});
+    }
+
+    trackModuleRef.current
+      .then(async () => {
+        const { trackPageView } = await import("@/lib/admin-db");
+        return trackPageView({
           path: location.pathname,
-          title: typeof document !== "undefined" ? document.title : "",
+          title,
           user_id: user?.uid ?? null,
           user_email: user?.email ?? null,
           session_id: sessionId,
-          referrer: typeof document !== "undefined" ? document.referrer || null : null,
-          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          referrer,
+          user_agent: ua,
           country_code: null,
           country_name: null,
         });
       })
       .catch(() => {});
-  }, [location, user, sessionId, lastTracked]);
+  }, [location, user]);
 
   return null;
 }
