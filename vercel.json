@@ -1,11 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
+  "buildCommand": "NITRO_PRESET=vercel npm run build",
   "framework": null,
-  "outputDirectory": ".output/public",
-  "cleanUrls": true,
+  "installCommandType": "standard",
+  "buildCommandType": "standard",
   "headers": [
+    {
+      "source": "/(assets|img|css|fonts)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
     {
       "source": "/(.*)\\.js",
       "headers": [
