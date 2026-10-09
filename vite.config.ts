@@ -13,6 +13,20 @@ export default defineConfig({
     resolve: {
       tsconfigPaths: true,
     },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "lucide-react",
+        "@tanstack/react-query",
+        "clsx",
+        "tailwind-merge",
+        "sonner",
+        "class-variance-authority",
+      ],
+      exclude: [],
+      holdUntilCrawlEnd: true,
+    },
     build: {
       target: "es2022",
       cssMinify: "lightningcss",
@@ -20,15 +34,19 @@ export default defineConfig({
       cssCodeSplit: true,
       sourcemap: false,
       reportCompressedSize: false,
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 1500,
+      modulePreload: {
+        polyfill: false,
+      },
       rollupOptions: {
         output: {
           manualChunks: (id: string) => {
-            // Core React runtime — changes rarely, excellent cache hit
             if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
               return "vendor-react";
             }
-            // Router & query
+            if (id.includes("node_modules/react-dom/client") || id.includes("react-dom/server")) {
+              return "vendor-react";
+            }
             if (id.includes("@tanstack/react-router") || id.includes("@tanstack/react-start")) {
               return "vendor-router";
             }
@@ -38,11 +56,9 @@ export default defineConfig({
             if (id.includes("@tanstack/zod-adapter") || id.includes("node_modules/zod/")) {
               return "vendor-zod";
             }
-            // Icons — huge but static, cache forever
             if (id.includes("lucide-react")) {
               return "vendor-icons";
             }
-            // Firebase — lazy loaded on demand
             if (id.includes("node_modules/firebase/")) {
               if (id.includes("/auth/")) return "vendor-firebase-auth";
               if (id.includes("/firestore/")) return "vendor-firebase-firestore";
@@ -50,11 +66,9 @@ export default defineConfig({
               if (id.includes("/app/")) return "vendor-firebase-app";
               return "vendor-firebase";
             }
-            // Forms
             if (id.includes("react-hook-form") || id.includes("@hookform/resolvers")) {
               return "vendor-forms";
             }
-            // UI helpers
             if (
               id.includes("class-variance-authority") ||
               id.includes("clsx") ||
@@ -65,11 +79,9 @@ export default defineConfig({
             ) {
               return "vendor-ui";
             }
-            // Charts (admin only)
             if (id.includes("recharts")) {
               return "vendor-charts";
             }
-            // Extra UI libs
             if (
               id.includes("embla-carousel-react") ||
               id.includes("react-day-picker") ||
@@ -79,7 +91,6 @@ export default defineConfig({
             ) {
               return "vendor-extra-ui";
             }
-            // Radix primitives — core used on every page
             if (id.includes("@radix-ui/")) {
               const core = [
                 "react-dialog",
@@ -95,7 +106,6 @@ export default defineConfig({
             }
             return undefined;
           },
-          // Use content-based hash filenames for aggressive HTTP caching
           chunkFileNames: "assets/chunk-[name]-[hash:8].js",
           entryFileNames: "assets/entry-[name]-[hash:8].js",
           assetFileNames: (assetInfo) => {
@@ -114,9 +124,14 @@ export default defineConfig({
         },
       },
     },
-    esbuild: {
-      target: "es2022",
-      legalComments: "none",
+    oxc: {
+      transform: {
+        target: "es2022",
+        legalComments: "none",
+      },
+    },
+    ssr: {
+      noExternal: ["lucide-react"],
     },
   },
 });

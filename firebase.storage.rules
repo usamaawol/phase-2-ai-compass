@@ -21,7 +21,10 @@ service firebase.storage {
       return isSignedIn()
         && firestore.exists(
             /databases/(default)/documents/admin_users/$(request.auth.uid)
-          );
+          )
+        && firestore.get(
+            /databases/(default)/documents/admin_users/$(request.auth.uid)
+          ).data.role == 'admin';
     }
 
     function matchesMime(pattern) {

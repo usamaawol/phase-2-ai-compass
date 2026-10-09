@@ -25,6 +25,10 @@
   --radius-md: 6px;
   --radius-lg: 8px;
 }
+@font-face {
+  font-family: "Geist";
+  font-display: swap;
+}
 :root {
   --background: oklch(0.145 0.006 150);
   --foreground: oklch(0.96 0.005 120);
@@ -219,6 +223,7 @@
 }
 .section {
   padding-block: 58px;
+  contain: layout style;
 }
 .section-heading {
   display: flex;
@@ -255,6 +260,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+  contain: layout paint;
 }
 .category-card {
   display: block;
@@ -265,6 +271,8 @@
   transition:
     transform 0.2s,
     border-color 0.2s;
+  contain: layout paint style;
+  will-change: transform;
 }
 .category-card:hover {
   transform: translateY(-3px);
@@ -310,6 +318,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  contain: layout paint;
 }
 .tool-card {
   padding: 24px;
@@ -321,6 +330,8 @@
   transition:
     transform 0.2s,
     border-color 0.2s;
+  contain: layout paint style;
+  will-change: transform;
 }
 .tool-card:hover {
   transform: translateY(-3px);

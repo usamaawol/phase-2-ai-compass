@@ -16,6 +16,12 @@ dist-ssr
 .nitro
 *.local
 
+# Lockfiles are generally committable, but this project uses package-lock.json
+# via NPM. Bun and yarn generated lockfiles are machine-local artifacts here.
+bun.lock
+bun.lockb
+yarn.lock
+
 # Environment variables — never commit real secrets
 .env
 .env.local

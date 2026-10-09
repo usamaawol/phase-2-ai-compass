@@ -12,7 +12,18 @@ import {
   Tooltip as ReTooltip,
   Legend,
 } from "recharts";
-import { Eye, Users, UserCheck, UserPlus, TrendingUp, Activity, FileText } from "lucide-react";
+import {
+  Eye,
+  Users,
+  UserCheck,
+  UserPlus,
+  TrendingUp,
+  Activity,
+  FileText,
+  AlertTriangle,
+  RefreshCw,
+  DatabaseZap,
+} from "lucide-react";
 import { getAnalytics } from "@/lib/admin-db";
 import { pageHead } from "@/lib/metadata";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -29,16 +40,70 @@ const chartConfig = {
   unique: { label: "Unique Visitors", color: "hsl(var(--chart-2))" },
 } as const;
 
+function classifyAnalyticsError(err: unknown): {
+  code: string;
+  title: string;
+  detail: string;
+  hint: string;
+  canRetry: boolean;
+} {
+  const msg =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : Object.prototype.toString.call(err);
+  const m = msg.toLowerCase();
+
+  if (m.includes("permission") || m.includes("unauthorized") || m.includes("permission-denied")) {
+    return {
+      code: "permission-denied",
+      title: "Analytics data is currently unavailable",
+      detail:
+        "Firestore returned permission-denied when reading page_views or the users collection.",
+      hint: "Deploy the latest firebase.rules (see firebase.rules at project root), and make sure your UID is listed in /admin_users with { role: 'admin' }.",
+      canRetry: true,
+    };
+  }
+  if (m.includes("network") || m.includes("offline") || m.includes("unavailable")) {
+    return {
+      code: "network",
+      title: "Can't reach Firebase right now",
+      detail: "A network error occurred while loading analytics.",
+      hint: "Check your internet connection and try again.",
+      canRetry: true,
+    };
+  }
+  return {
+    code: "unknown",
+    title: "Couldn't load analytics",
+    detail: msg || "An unknown error occurred.",
+    hint: "Try refreshing this page. If the issue persists, check the browser console for details.",
+    canRetry: true,
+  };
+}
+
 function AdminAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ReturnType<typeof classifyAnalyticsError> | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await getAnalytics();
+      setData(d);
+    } catch (e: unknown) {
+      setError(classifyAnalyticsError(e));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    getAnalytics()
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const chartData = useMemo(() => {
@@ -50,7 +115,34 @@ function AdminAnalytics() {
   }, [data]);
 
   if (loading) return <div className="admin-page-loading">Loading analytics…</div>;
-  if (error) return <div className="admin-error">Error: {error}</div>;
+
+  if (error) {
+    return (
+      <div className="admin-empty admin-analytics-empty">
+        <div className="admin-empty-icon">
+          {error.code === "permission-denied" ? (
+            <DatabaseZap size={36} />
+          ) : (
+            <AlertTriangle size={36} />
+          )}
+        </div>
+        <h3 className="admin-empty-title">{error.title}</h3>
+        <p className="admin-empty-sub">{error.detail}</p>
+        {error.hint && (
+          <div className="admin-analytics-hint" role="note">
+            <strong>Tip:</strong> {error.hint}
+          </div>
+        )}
+        {error.canRetry && (
+          <button className="btn btn-primary admin-empty-btn" onClick={load}>
+            <RefreshCw size={14} />
+            Reload analytics
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   const statCards = [

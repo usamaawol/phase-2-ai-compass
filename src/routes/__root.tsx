@@ -151,10 +151,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/favicon.svg" },
       { rel: "mask-icon", href: "/favicon.svg", color: "#b5e85b" },
       { rel: "canonical", href: SITE_URL },
-      { rel: "alternate", href: SITE_URL, hreflang: "x-default" },
-      { rel: "alternate", href: SITE_URL, hreflang: "en" },
-      { rel: "alternate", href: SITE_URL, hreflang: "en-US" },
-      { rel: "alternate", href: SITE_URL, hreflang: "en-GB" },
+      { rel: "alternate", href: SITE_URL, hrefLang: "x-default" },
+      { rel: "alternate", href: SITE_URL, hrefLang: "en" },
+      { rel: "alternate", href: SITE_URL, hrefLang: "en-US" },
+      { rel: "alternate", href: SITE_URL, hrefLang: "en-GB" },
 
       /* DNS prefetch + preconnect speeds up third-party origin lookups */
       { rel: "dns-prefetch", href: "https://fonts.googleapis.com" },
@@ -286,7 +286,22 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (!user) {
     const handleSignIn = async () => {
       await signIn();
-      navigate({ to: location.pathname + (location.search || "") }, { replace: true });
+      try {
+        const pn = safeString(location?.pathname, "/");
+        const sh = safeString(location?.search, "");
+        let target = "/";
+        try {
+          const joined = "" + pn + sh;
+          target = typeof joined === "string" && joined.startsWith("/") ? joined : "/";
+        } catch {
+          target = pn && typeof pn === "string" && pn.startsWith("/") ? pn : "/";
+        }
+        navigate({ to: target, replace: true });
+      } catch {
+        try {
+          navigate({ to: "/", replace: true });
+        } catch {}
+      }
     };
 
     return (
@@ -322,67 +337,155 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function safeString(v: unknown, fallback = ""): string {
+  if (typeof v === "string") return v;
+  if (v === null || v === undefined) return fallback;
+  try {
+    const t = Object.prototype.toString.call(v);
+    if (t === "[object String]" || t === "[object Number]" || t === "[object Boolean]") {
+      return String(v);
+    }
+  } catch {}
+  try {
+    const s = Object.prototype.toString.call(v);
+    return typeof s === "string" ? s : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function safePathJoin(a: unknown, b: unknown): string {
+  try {
+    const sa = safeString(a, "");
+    const sb = safeString(b, "");
+    try {
+      return "" + sa + sb;
+    } catch {
+      try {
+        return [sa, sb].join("");
+      } catch {
+        return sa;
+      }
+    }
+  } catch {
+    return "";
+  }
+}
+
 let SESSION_CACHE: string | null = null;
 function getSessionId(): string {
-  if (typeof window === "undefined") return "";
-  if (!SESSION_CACHE) {
-    try {
-      SESSION_CACHE = window.sessionStorage.getItem("ac_sid");
-      if (!SESSION_CACHE) {
-        SESSION_CACHE = "s-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        window.sessionStorage.setItem("ac_sid", SESSION_CACHE);
+  try {
+    if (typeof window === "undefined") return "";
+    if (!SESSION_CACHE) {
+      try {
+        const stored = window.sessionStorage.getItem("ac_sid");
+        SESSION_CACHE = typeof stored === "string" && stored.length > 0 ? stored : null;
+        if (!SESSION_CACHE) {
+          const rand = Math.random().toString(36).slice(2, 10);
+          const ts = Number(Date.now() || 0).toString(36);
+          SESSION_CACHE = "s-" + rand + ts;
+          try {
+            window.sessionStorage.setItem("ac_sid", SESSION_CACHE);
+          } catch {}
+        }
+      } catch {
+        SESSION_CACHE = "s-" + Math.random().toString(36).slice(2, 10);
       }
-    } catch {
-      SESSION_CACHE = "s-" + Math.random().toString(36).slice(2, 10);
     }
+    return typeof SESSION_CACHE === "string" ? SESSION_CACHE : "";
+  } catch {
+    return "";
   }
-  return SESSION_CACHE;
 }
 
 function PageViewTracker() {
-  const location = useLocation();
-  const { user } = useAuth();
-  const sessionIdRef = useRef<string>("");
-  const lastTrackedRef = useRef<string>("");
-  const trackModuleRef = useRef<Promise<void> | null>(null);
+  try {
+    const location = useLocation();
+    const auth = useAuth() || {};
+    const user = auth?.user ?? null;
+    const sessionIdRef = useRef<string>("");
+    const lastTrackedRef = useRef<string>("");
+    const trackModuleRef = useRef<Promise<unknown> | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
-    const sessionId = sessionIdRef.current;
-    if (!sessionId) return;
+    useEffect(() => {
+      let cancelled = false;
+      const run = () => {
+        try {
+          if (typeof window === "undefined") return;
 
-    const key = location.pathname + (location.search || "");
-    if (lastTrackedRef.current === key) return;
-    lastTrackedRef.current = key;
+          if (!sessionIdRef.current) sessionIdRef.current = getSessionId();
+          const sessionId = safeString(sessionIdRef.current, "");
+          if (!sessionId) return;
 
-    const title = typeof document !== "undefined" ? document.title : "";
-    const referrer = typeof document !== "undefined" ? document.referrer || null : null;
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : null;
+          const pathname = safeString(location?.pathname, "/");
+          const search = safeString(location?.search, "");
+          const key = safePathJoin(pathname, search);
+          if (!key) return;
+          if (lastTrackedRef.current === key) return;
+          lastTrackedRef.current = key;
 
-    if (!trackModuleRef.current) {
-      trackModuleRef.current = import("@/lib/admin-db").then(() => {});
-    }
+          let title = "";
+          try {
+            if (typeof document !== "undefined") title = safeString(document?.title, "");
+          } catch {}
 
-    trackModuleRef.current
-      .then(async () => {
-        const { trackPageView } = await import("@/lib/admin-db");
-        return trackPageView({
-          path: location.pathname,
-          title,
-          user_id: user?.uid ?? null,
-          user_email: user?.email ?? null,
-          session_id: sessionId,
-          referrer,
-          user_agent: ua,
-          country_code: null,
-          country_name: null,
-        });
-      })
-      .catch(() => {});
-  }, [location, user]);
+          let referrer: string | null = null;
+          try {
+            if (typeof document !== "undefined" && safeString(document?.referrer)) {
+              referrer = safeString(document.referrer) || null;
+            }
+          } catch {}
 
-  return null;
+          let ua: string | null = null;
+          try {
+            if (typeof navigator !== "undefined") ua = safeString(navigator?.userAgent) || null;
+          } catch {}
+
+          const uid = safeString(user?.uid) || null;
+          const email = safeString(user?.email) || null;
+
+          if (!trackModuleRef.current) {
+            trackModuleRef.current = import("@/lib/admin-db").catch(() => ({}));
+          }
+
+          Promise.resolve(trackModuleRef.current)
+            .then(async () => {
+              if (cancelled) return;
+              try {
+                const mod = (await import("@/lib/admin-db")) as unknown as Record<string, unknown>;
+                const fn = mod?.["trackPageView"];
+                if (typeof fn !== "function") return;
+                return await fn.call(null, {
+                  path: pathname || "/",
+                  title: title || "",
+                  user_id: uid,
+                  user_email: email,
+                  session_id: sessionId,
+                  referrer,
+                  user_agent: ua,
+                  country_code: null,
+                  country_name: null,
+                });
+              } catch {}
+              return undefined;
+            })
+            .catch(() => {});
+        } catch {}
+      };
+
+      try {
+        run();
+      } catch {}
+
+      return () => {
+        cancelled = true;
+      };
+    }, [location, user]);
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function BannedNotice() {

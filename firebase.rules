@@ -40,12 +40,32 @@ service cloud.firestore {
       return val is string && val.size() <= maxLen;
     }
 
+    function isValidOptionalString(val, maxLen) {
+      return val == null || isValidString(val, maxLen);
+    }
+
     function isValidUrl(val) {
       return val is string && (val == '' || val.matches('https?://.*'));
     }
 
     function isValidEmail(val) {
       return val is string && val.matches('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+    }
+
+    function optionalEmailMatchesToken(fieldName) {
+      // If fieldName is written at all and the caller is signed in,
+      // the value must match the caller's token email (or both be null).
+      return !(fieldName in request.resource.data)
+        || (request.resource.data[fieldName] == null && request.auth.token.email == null)
+        || (isSignedIn() && request.resource.data[fieldName] == request.auth.token.email);
+    }
+
+    function optionalUserIdMatchesToken(fieldName) {
+      // If fieldName is written and the caller is signed in, the value must be
+      // their own uid (or null / not provided). Prevents spoofing writes as other users.
+      return !(fieldName in request.resource.data)
+        || request.resource.data[fieldName] == null
+        || (isSignedIn() && request.resource.data[fieldName] == request.auth.uid);
     }
 
     function assertNoFieldChange(fields, oldData, newData) {
@@ -106,10 +126,15 @@ service cloud.firestore {
 
     // ── User profiles ───────────────────────────────────────────
     // Each user can read/write their own profile only.
-    // Admins can read all for moderation.
+    // Admins can read all for moderation / analytics.
     // BAN ENFORCEMENT: users cannot modify ban/role fields themselves.
     // Only admins can set disabled, ban_reason, banned_at, etc.
+    //
+    // NOTE: match /users/{uid} grants PER-DOCUMENT access for a known uid.
+    // Admin dashboards also query the ENTIRE COLLECTION (getAnalytics,
+    // adminListUsers), so admins need collection-level list access too.
     match /users/{uid} {
+      // Per-document rules (also apply when you read via doc ref with known uid)
       allow read:   if isOwner(uid) || isAdmin();
 
       allow create: if isOwner(uid)
@@ -121,9 +146,8 @@ service cloud.firestore {
                     && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email);
 
       allow update: if (isOwner(uid) && !isAdmin())
-                    // Owner updates — cannot touch ban/admin fields at all
-                    && request.resource.data.uid == uid
-                    && !(('disabled' in request.resource.data) && request.resource.data.disabled == true)
+                    // Owner updates — cannot touch ban/admin fields AT ALL (even to set them false/null)
+                    && !('disabled' in request.resource.data)
                     && !('ban_reason' in request.resource.data)
                     && !('banned_at' in request.resource.data)
                     && !('banned_by' in request.resource.data)
@@ -131,6 +155,8 @@ service cloud.firestore {
                     && !('unbanned_at' in request.resource.data)
                     && !('unbanned_by' in request.resource.data)
                     && !('unbanned_by_uid' in request.resource.data)
+                    // uid may be omitted in merge-style writes; if present it must match
+                    && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
                     && (!('displayName' in request.resource.data) || isValidString(request.resource.data.displayName, 100))
                     && (!('display_name' in request.resource.data) || isValidString(request.resource.data.display_name, 100))
                     && (!('email' in request.resource.data) || request.resource.data.email == request.auth.token.email)
@@ -153,6 +179,24 @@ service cloud.firestore {
       }
     }
 
+    // ── Collection-level admin list permissions ─────────────────
+    // Firestore rules don't fall through: a collection query (e.g.
+    //   getDocs(collection(db, "users"))
+    // requires an `allow list` or `allow read` at that collection's level.
+    // The per-document match above covers doc-by-doc reads; these explicit
+    // collection-level rules cover ADMIN-ONLY collection listings used by
+    // adminListUsers(), adminListSubmissions(), getAnalytics(), etc.
+    match /users/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /admin_users/{document=**} {
+      allow read:   if isAdmin();
+      allow write:  if isAdmin()
+                    && request.resource.data.keys().hasOnly(['role', 'grantedAt', 'grantedBy', 'name', 'email'])
+                    && request.resource.data.role is string
+                    && request.resource.data.role in ['admin', 'moderator', 'editor'];
+    }
+
     // ── Tool submissions ────────────────────────────────────────
     // ONLY ADMINS can create tool submissions or manage imported records.
     // Regular users cannot submit AI tools directly — they must use the
@@ -162,11 +206,16 @@ service cloud.firestore {
       allow read:   if isAdmin();
 
       allow create: if isAdmin()
-                    && request.resource.data.status in ['pending', 'approved', 'rejected'];
+                    && request.resource.data.status in ['pending', 'approved', 'rejected']
+                    // submitTool() writes: user_id, status, review_note, created_at, data{...}
+                    && request.resource.data.keys().hasAll(['user_id', 'status', 'review_note', 'created_at', 'data'])
+                    // 'data' must be a map/object of submitted tool fields (not free-form scalar)
+                    && request.resource.data.data is map
+                    && request.resource.data.data.keys().hasAll(['name', 'official_url', 'company', 'short_description', 'categories', 'submitter_notes', 'submitted_at']);
 
       allow update: if isAdmin()
                     // Admin can only change status + review_note, never user_id or submitted data
-                    && assertNoFieldChange(['user_id', 'created_at'], resource.data, request.resource.data);
+                    && assertNoFieldChange(['user_id', 'created_at', 'data'], resource.data, request.resource.data);
 
       allow delete: if isAdmin();
     }
@@ -187,11 +236,21 @@ service cloud.firestore {
     // ── Feedback / Suggestions (user submitted ideas, bugs, tool suggestions) ─────
     // Anyone (including anonymous) can create feedback.
     // Only admins can read, update, or delete feedback for moderation.
+    // If the creator is signed in and includes user_id/user_email, they must
+    // match their auth token to prevent impersonation.
     match /feedback/{fbId} {
       allow create: if request.resource.data.keys().hasAll(['type', 'message', 'page_url', 'created_at'])
                     && request.resource.data.type in ['bug', 'suggestion', 'incorrect_info', 'other', 'suggest_tool']
                     && isValidString(request.resource.data.message, 5000)
                     && isValidString(request.resource.data.page_url, 500)
+                    // Anti-spoofing: identity fields must actually belong to the caller
+                    && optionalUserIdMatchesToken('user_id')
+                    && optionalEmailMatchesToken('user_email')
+                    // Feedback initially created with status 'new' only; admins change it later
+                    && (!('status' in request.resource.data) || request.resource.data.status == 'new')
+                    && (!('reviewed_at' in request.resource.data) || request.resource.data.reviewed_at == null)
+                    && (!('reviewed_by' in request.resource.data) || request.resource.data.reviewed_by == null)
+                    && (!('admin_response' in request.resource.data) || request.resource.data.admin_response == null)
                     && (!('user_email' in request.resource.data) || isValidEmail(request.resource.data.user_email));
 
       allow read, update, delete: if isAdmin();
@@ -207,6 +266,7 @@ service cloud.firestore {
     // Used by trackPageView() in admin-db.ts. Anyone (including unauthenticated)
     // may CREATE page views. Only admins may read/list page views.
     // No updates or deletes allowed (append-only audit log).
+    // Anti-spoofing: signed-in writers can only record THEIR OWN user_id/email.
     match /page_views/{pvId} {
       allow create: if request.resource.data.keys().hasAll(
                          ['path','session_id','path_group','hour_bucket','day_bucket','week_bucket','month_bucket','created_at']
@@ -217,7 +277,16 @@ service cloud.firestore {
                     && isValidString(request.resource.data.hour_bucket, 20)
                     && isValidString(request.resource.data.day_bucket, 20)
                     && isValidString(request.resource.data.week_bucket, 20)
-                    && isValidString(request.resource.data.month_bucket, 20);
+                    && isValidString(request.resource.data.month_bucket, 20)
+                    // Optional string length checks for analytics extras
+                    && isValidOptionalString(request.resource.data.title, 300)
+                    && isValidOptionalString(request.resource.data.referrer, 500)
+                    && isValidOptionalString(request.resource.data.user_agent, 500)
+                    && isValidOptionalString(request.resource.data.country_code, 3)
+                    && isValidOptionalString(request.resource.data.country_name, 60)
+                    // Anti-spoofing: identity fields must actually belong to caller
+                    && optionalUserIdMatchesToken('user_id')
+                    && optionalEmailMatchesToken('user_email');
       allow read: if isAdmin();
       allow update, delete: if false;
     }

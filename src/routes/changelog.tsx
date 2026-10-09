@@ -1,23 +1,76 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, CheckCircle, Clock, Wrench } from "lucide-react";
+import { ArrowUpRight, CheckCircle, Clock, ShieldAlert, Loader2, Wrench } from "lucide-react";
 import { pageHead, breadcrumbSchema, SITE_URL } from "@/lib/metadata";
+import { AdminProvider, useAdmin } from "@/hooks/use-admin";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/changelog")({
-  head: () => ({
-    ...pageHead(
-      "Changelog — What's New",
-      "See the latest updates, new features, and improvements to AI Compass.",
-      { path: "/changelog", keywords: "AI Compass updates, changelog, new features, roadmap" },
-    ),
-    scripts: [
-      breadcrumbSchema([
-        { name: "AI Compass", url: SITE_URL },
-        { name: "Changelog", url: `${SITE_URL}/changelog` },
-      ]),
-    ],
-  }),
-  component: ChangelogPage,
+  head: () => {
+    const base = pageHead(
+      "Changelog — Admin",
+      "Internal update notes for AI Compass administrators.",
+      { path: "/changelog", noindex: true },
+    );
+    return {
+      // pageHead() already injects { noindex,nofollow } robots for noindex:true.
+      // We add googlebot + noarchive for extra safety, making changelog truly
+      // invisible to search crawlers since the page itself is admin-only.
+      meta: [
+        ...base.meta,
+        { name: "googlebot", content: "noindex,nofollow,noarchive" },
+        { name: "robots", content: "noindex,nofollow,noarchive,nosnippet" },
+      ],
+      links: base.links,
+    };
+  },
+  component: () => (
+    <AdminProvider>
+      <AdminGatedChangelog />
+    </AdminProvider>
+  ),
 });
+
+/**
+ * Changelog is now PRIVATE / ADMIN-ONLY (publish-readiness request).
+ * This gate ensures no random / unauthenticated user or regular signed-in
+ * user can read the changelog content or roadmap — it renders only when
+ * /admin_users/{uid} has role == 'admin'.
+ */
+function AdminGatedChangelog() {
+  const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+
+  if (authLoading || adminLoading) {
+    return (
+      <div className="shell">
+        <div className="admin-loading">
+          <Loader2 className="animate-spin" size={24} />
+          <span>Checking permissions…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="shell">
+        <div className="admin-denied">
+          <ShieldAlert size={40} />
+          <h1>Changelog is for administrators only</h1>
+          <p>
+            This page contains internal release notes and roadmap items. It
+            is not visible to the public.
+          </p>
+          <Link to="/" className="admin-denied-link">
+            ← Back to AI Compass
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <ChangelogPage />;
+}
 
 interface Entry {
   date: string;

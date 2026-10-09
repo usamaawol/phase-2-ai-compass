@@ -38,7 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Dynamically import firebase only on the client
     let unsub: (() => void) | undefined;
     import("@/lib/firebase")
-      .then(async ({ auth, onAuthStateChanged }) => {
+      .then(async ({ auth, onAuthStateChanged, resolvePendingRedirect }) => {
+        // If the user just returned from a signInWithRedirect() Google flow,
+        // consume the pending result so onAuthStateChanged fires the signed-in user.
+        try {
+          await resolvePendingRedirect();
+        } catch {}
+
         const { isUserBanned, recordUserActivity } = await import("@/lib/admin-db");
         unsub = onAuthStateChanged(auth, async (u) => {
           const authUser = u
@@ -95,8 +101,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn() {
-    const { signInWithGoogle } = await import("@/lib/firebase");
-    await signInWithGoogle();
+    try {
+      const { signInWithGoogle } = await import("@/lib/firebase");
+      await signInWithGoogle();
+    } catch (err) {
+      // signInWithGoogle already handles popup-blocked → redirect fallback
+      // internally. Any error that makes it here is non-recoverable in the
+      // redirect flow case (which doesn't throw — the page just navigates),
+      // so just log for debugging instead of showing a crash to the user.
+      const code = (err as { code?: string })?.code;
+      if (
+        code === "auth/popup-blocked" ||
+        code === "auth/cancelled-popup-request" ||
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/user-cancelled"
+      ) {
+        // User intentionally cancelled or browser blocked. No-op; if redirect
+        // fallback was applicable, signInWithGoogle already initiated it.
+        return;
+      }
+      // Re-throw only non-user-cancellation / non-popup errors so they still
+      // surface without making the auth boundary itself brittle.
+      if (typeof window !== "undefined") console.warn("[sign-in]", err);
+    }
   }
 
   async function signOut() {

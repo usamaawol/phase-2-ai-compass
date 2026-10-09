@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { memo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Compass,
@@ -215,7 +215,7 @@ export function TaskChips({ all = false }: { all?: boolean }) {
     </div>
   );
 }
-export function CategoryCard({ category: c }: { category: Category }) {
+export const CategoryCard = memo(function CategoryCard({ category: c }: { category: Category }) {
   const Icon = c.icon;
   return (
     <Link to="/category/$slug" params={{ slug: c.slug }} className="category-card">
@@ -230,7 +230,7 @@ export function CategoryCard({ category: c }: { category: Category }) {
       </span>
     </Link>
   );
-}
+});
 const logoIcons: Record<string, LucideIcon> = {
   chatgpt: Command,
   claude: Sparkles,
@@ -241,15 +241,15 @@ const logoIcons: Record<string, LucideIcon> = {
   runway: Bot,
   elevenlabs: AudioLines,
 };
-export function ToolLogo({ tool }: { tool: Tool }) {
+export const ToolLogo = memo(function ToolLogo({ tool }: { tool: Tool }) {
   const Icon = logoIcons[tool.slug];
   return (
     <div className={`tool-logo logo-${tool.slug}`} aria-label={`${tool.name} avatar`}>
       {Icon ? <Icon size={27} strokeWidth={1.8} /> : tool.name.charAt(0)}
     </div>
   );
-}
-export function ToolCard({ tool: t }: { tool: Tool }) {
+});
+export const ToolCard = memo(function ToolCard({ tool: t }: { tool: Tool }) {
   const { isBookmarked, toggle } = useBookmarks();
   const saved = isBookmarked(t.slug);
   return (
@@ -298,8 +298,8 @@ export function ToolCard({ tool: t }: { tool: Tool }) {
       </div>
     </article>
   );
-}
-export function ToolGrid({ items }: { items: Tool[] }) {
+});
+export const ToolGrid = memo(function ToolGrid({ items }: { items: Tool[] }) {
   return (
     <div className="tool-grid">
       {items.map((t) => (
@@ -307,7 +307,7 @@ export function ToolGrid({ items }: { items: Tool[] }) {
       ))}
     </div>
   );
-}
+});
 export function SectionHeading({
   eyebrow,
   title,

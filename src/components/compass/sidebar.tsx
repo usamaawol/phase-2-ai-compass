@@ -30,6 +30,12 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   protected?: boolean;
+  /**
+   * When true, this nav entry is ONLY rendered if the current signed-in
+   * user has /admin_users/{uid}.role == 'admin'. Random users, anonymous
+   * visitors, and even regular signed-in users will never see it.
+   */
+  adminOnly?: boolean;
 }
 
 const NAV: NavItem[] = [
@@ -39,7 +45,8 @@ const NAV: NavItem[] = [
   { to: "/categories", label: "Categories", icon: LayoutGrid, protected: true },
   { to: "/compare", label: "Compare", icon: GitCompareArrows, protected: true },
   { to: "/saved", label: "Saved", icon: Bookmark, protected: true },
-  { to: "/changelog", label: "Changelog", icon: ScrollText },
+  // Changelog is admin-only internal notes. Do not surface to public.
+  { to: "/changelog", label: "Changelog", icon: ScrollText, adminOnly: true },
   { to: "/faq", label: "FAQ", icon: Info },
   { to: "/about", label: "About", icon: Info },
 ];
@@ -196,7 +203,14 @@ function NavContent({
 
       {/* ── Nav links ── */}
       <nav className="nav-links-list" aria-label="Main navigation">
-        {NAV.map((item) => {
+        {NAV.filter((item) => {
+          // Strip admin-only items for everyone except confirmed admins.
+          if (item.adminOnly) {
+            if (adminLoading) return false;
+            if (!isAdmin) return false;
+          }
+          return true;
+        }).map((item) => {
           const Icon = item.icon;
           const active =
             location.pathname === item.to ||

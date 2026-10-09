@@ -64,12 +64,30 @@ export interface ToolRecord {
 export type ToolStatus = ToolRecord["status"];
 export type VerifStatus = ToolRecord["verification_status"];
 
+function safeStr(v: unknown, fallback = ""): string {
+  if (typeof v === "string") return v;
+  if (v === null || v === undefined) return fallback;
+  try {
+    const t = Object.prototype.toString.call(v);
+    if (t === "[object String]" || t === "[object Number]" || t === "[object Boolean]") {
+      return String(v);
+    }
+  } catch {}
+  try {
+    const s = Object.prototype.toString.call(v);
+    return typeof s === "string" ? s : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function now() {
   return new Date().toISOString();
 }
 
 function slugify(name: string) {
-  return name
+  const n = safeStr(name, "");
+  return n
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
@@ -633,56 +651,105 @@ export async function trackPageView(
     | "id"
   > & { title?: string },
 ) {
-  const nowIso = now();
-  const ts = new Date(nowIso);
-  const year = ts.getUTCFullYear();
-  const month = String(ts.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(ts.getUTCDate()).padStart(2, "0");
-  const hour = String(ts.getUTCHours()).padStart(2, "0");
-  const weekNum = getUtcWeekNumber(ts);
-
   try {
-    await addDoc(collection(db, "page_views"), {
-      ...data,
-      path_group: pathToGroup(data.path),
-      hour_bucket: `${year}-${month}-${day}_${hour}:00`,
-      day_bucket: `${year}-${month}-${day}`,
-      week_bucket: `${year}-W${weekNum}`,
-      month_bucket: `${year}-${month}`,
-      created_at: nowIso,
-    });
+    const nowIso = now();
+    let ts: Date;
+    try {
+      ts = new Date(nowIso);
+    } catch {
+      ts = new Date();
+    }
+    let year = 0;
+    let month = "01";
+    let day = "01";
+    let hour = "00";
+    let weekNum = "01";
+    try {
+      year = ts.getUTCFullYear();
+      month = String(ts.getUTCMonth() + 1).padStart(2, "0");
+      day = String(ts.getUTCDate()).padStart(2, "0");
+      hour = String(ts.getUTCHours()).padStart(2, "0");
+      weekNum = getUtcWeekNumber(ts);
+    } catch {}
+
+    const dataRec = data as unknown as Record<string, unknown>;
+    const path = safeStr(dataRec?.["path"] ?? "/");
+    const title = safeStr(dataRec?.["title"] ?? "");
+    const uid = safeStr(dataRec?.["user_id"] ?? null);
+    const email = safeStr(dataRec?.["user_email"] ?? null);
+    const sid = safeStr(dataRec?.["session_id"] ?? "");
+    const ref = safeStr(dataRec?.["referrer"] ?? null);
+    const uagent = safeStr(dataRec?.["user_agent"] ?? null);
+    const cc = safeStr(dataRec?.["country_code"] ?? null);
+    const cn = safeStr(dataRec?.["country_name"] ?? null);
+
+    try {
+      await addDoc(collection(db, "page_views"), {
+        path: path || "/",
+        title: title || "",
+        user_id: uid || null,
+        user_email: email || null,
+        session_id: sid || ("fallback-" + Math.random().toString(36).slice(2, 10)),
+        referrer: ref,
+        user_agent: uagent,
+        country_code: cc,
+        country_name: cn,
+        path_group: pathToGroup(path || "/"),
+        hour_bucket: `${year}-${month}-${day}_${hour}:00`,
+        day_bucket: `${year}-${month}-${day}`,
+        week_bucket: `${year}-W${weekNum}`,
+        month_bucket: `${year}-${month}`,
+        created_at: nowIso,
+      });
+    } catch {
+      /* fire-and-forget, don't crash app if analytics fail */
+    }
   } catch {
-    /* fire-and-forget, don't crash app if analytics fail */
+    /* top-level guard so even date/coercion failures never throw */
   }
 }
 
 function pathToGroup(path: string): string {
-  if (path === "/") return "home";
-  if (path.startsWith("/admin")) return "admin";
-  if (path.startsWith("/tool")) return "tool_detail";
-  if (path.startsWith("/category")) return "category_detail";
-  if (path.startsWith("/categories")) return "categories";
-  if (path.startsWith("/discover")) return "discover";
-  if (path.startsWith("/find")) return "find";
-  if (path.startsWith("/compare")) return "compare";
-  if (path.startsWith("/saved")) return "saved";
-  if (path.startsWith("/account")) return "account";
-  if (path.startsWith("/submit")) return "suggest_tool";
-  if (path.startsWith("/changelog")) return "changelog";
-  if (path.startsWith("/faq")) return "faq";
-  if (path.startsWith("/about")) return "about";
-  return "other";
+  try {
+    const p = safeStr(path, "");
+    if (p === "/") return "home";
+    if (p.startsWith("/admin")) return "admin";
+    if (p.startsWith("/tool")) return "tool_detail";
+    if (p.startsWith("/category")) return "category_detail";
+    if (p.startsWith("/categories")) return "categories";
+    if (p.startsWith("/discover")) return "discover";
+    if (p.startsWith("/find")) return "find";
+    if (p.startsWith("/compare")) return "compare";
+    if (p.startsWith("/saved")) return "saved";
+    if (p.startsWith("/account")) return "account";
+    if (p.startsWith("/submit")) return "suggest_tool";
+    if (p.startsWith("/changelog")) return "changelog";
+    if (p.startsWith("/faq")) return "faq";
+    if (p.startsWith("/about")) return "about";
+    return "other";
+  } catch {
+    return "other";
+  }
 }
 
 function getUtcWeekNumber(d: Date): string {
-  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dayNr = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayNr + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const weekDiff = target.valueOf() - firstThursday.valueOf();
-  const week =
-    1 + Math.round((weekDiff / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
-  return String(week).padStart(2, "0");
+  try {
+    let target: Date;
+    try {
+      target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    } catch {
+      target = new Date();
+    }
+    const dayNr = (target.getUTCDay() + 6) % 7;
+    target.setUTCDate(target.getUTCDate() - dayNr + 3);
+    const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+    const weekDiff = target.valueOf() - firstThursday.valueOf();
+    const week =
+      1 + Math.round((weekDiff / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+    return String(week).padStart(2, "0");
+  } catch {
+    return "01";
+  }
 }
 
 /* ── ADMIN ANALYTICS QUERIES ────────────────────────────────── */
