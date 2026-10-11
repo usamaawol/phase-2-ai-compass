@@ -263,6 +263,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   const isPublicPath = PUBLIC_PATHS.some((p) =>
     p === "/" ? location.pathname === "/" : location.pathname.startsWith(p),
@@ -285,8 +286,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!user) {
     const handleSignIn = async () => {
-      await signIn();
+      setSignInError(null);
       try {
+        await signIn();
+        // If we get here, the user signed in via popup. For redirect sign-in,
+        // the page navigates away and comes back; onAuthStateChanged picks it up.
         const pn = safeString(location?.pathname, "/");
         const sh = safeString(location?.search, "");
         let target = "/";
@@ -297,10 +301,28 @@ function RequireAuth({ children }: { children: ReactNode }) {
           target = pn && typeof pn === "string" && pn.startsWith("/") ? pn : "/";
         }
         navigate({ to: target, replace: true });
-      } catch {
-        try {
-          navigate({ to: "/", replace: true });
-        } catch {}
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        const msg = err instanceof Error ? err.message : String(err);
+        if (code === "auth/operation-not-allowed") {
+          setSignInError(
+            "Google sign-in is not enabled in Firebase Console. Enable Authentication → Sign-in method → Google.",
+          );
+        } else if (code === "auth/unauthorized-domain") {
+          setSignInError(
+            "This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.",
+          );
+        } else if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key") {
+          setSignInError("Firebase API key is invalid. Check VITE_FIREBASE_API_KEY environment variable.");
+        } else if (code === "auth/web-storage-unsupported") {
+          setSignInError("Browser storage is disabled. Enable cookies / third-party storage and try again.");
+        } else if (code === "auth/network-request-failed") {
+          setSignInError("Network error. Check your connection and try again.");
+        } else if (msg.includes("Firebase is not configured")) {
+          setSignInError("Firebase is not configured. Set the VITE_FIREBASE_* environment variables.");
+        } else {
+          setSignInError("Sign-in failed. Please try again.");
+        }
       }
     };
 
@@ -316,6 +338,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
             <p className="auth-gate-desc">
               You need a free account to access this page. Sign in with Google in one click.
             </p>
+            {signInError && (
+              <p className="login-error" role="alert" style={{ marginTop: 16 }}>
+                {signInError}
+              </p>
+            )}
             <div className="auth-gate-actions">
               <Button size="lg" onClick={handleSignIn} className="auth-gate-signin">
                 <LogIn size={18} />

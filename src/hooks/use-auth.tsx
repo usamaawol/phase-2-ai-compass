@@ -106,23 +106,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithGoogle();
     } catch (err) {
       // signInWithGoogle already handles popup-blocked → redirect fallback
-      // internally. Any error that makes it here is non-recoverable in the
-      // redirect flow case (which doesn't throw — the page just navigates),
-      // so just log for debugging instead of showing a crash to the user.
+      // internally. For user-initiated cancellations, silently no-op so we
+      // don't flash a misleading error. For any *other* error (Firebase not
+      // configured, Google provider disabled, unauthorized domain, etc.),
+      // re-throw so the calling UI (LoginModal / auth gate) can surface it.
       const code = (err as { code?: string })?.code;
-      if (
+      const cancelled =
         code === "auth/popup-blocked" ||
         code === "auth/cancelled-popup-request" ||
         code === "auth/popup-closed-by-user" ||
-        code === "auth/user-cancelled"
-      ) {
-        // User intentionally cancelled or browser blocked. No-op; if redirect
-        // fallback was applicable, signInWithGoogle already initiated it.
-        return;
-      }
-      // Re-throw only non-user-cancellation / non-popup errors so they still
-      // surface without making the auth boundary itself brittle.
+        code === "auth/user-cancelled";
+
+      if (cancelled) return;
+
       if (typeof window !== "undefined") console.warn("[sign-in]", err);
+      throw err;
     }
   }
 

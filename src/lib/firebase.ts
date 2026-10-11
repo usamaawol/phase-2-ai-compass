@@ -239,7 +239,7 @@ export async function signInWithGoogle() {
       code === "auth/popup-blocked" ||
       code === "auth/popup-closed-by-user" ||
       code === "auth/cancelled-popup-request" ||
-      code === "auth/operation-not-allowed" ||
+      code === "auth/web-storage-unsupported" ||
       (code == null && err instanceof Error && /popup|block/i.test(err.message));
 
     if (useRedirect) {
