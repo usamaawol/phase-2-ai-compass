@@ -3,8 +3,6 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "NITRO_PRESET=vercel npm run build",
   "framework": null,
-  "installCommandType": "standard",
-  "buildCommandType": "standard",
   "headers": [
     {
       "source": "/(assets|img|css|fonts)/(.*)",
