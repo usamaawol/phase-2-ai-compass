@@ -1,4 +1,4 @@
-import { memo, useState, type FormEvent } from "react";
+import { memo, lazy, Suspense, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Compass,
@@ -355,5 +355,17 @@ export function CategoryGrid({ featured = false }: { featured?: boolean }) {
           <CategoryCard key={c.slug} category={c} />
         ))}
     </div>
+  );
+}
+
+// Lazy-loaded FeedbackButton — deferred until after main content paints
+const LazyFeedbackButton = lazy(() =>
+  import("@/components/compass/feedback-button").then((m) => ({ default: m.FeedbackButton })),
+);
+export function FeedbackButtonLazy() {
+  return (
+    <Suspense fallback={null}>
+      <LazyFeedbackButton />
+    </Suspense>
   );
 }

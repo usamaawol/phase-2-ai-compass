@@ -37,8 +37,14 @@ export default defineConfig({
       chunkSizeWarningLimit: 1500,
       modulePreload: {
         polyfill: false,
+        resolveDependencies: (_url, deps) => deps, // preload all eager deps in parallel
       },
       rollupOptions: {
+        treeshake: {
+          moduleSideEffects: false,
+          propertyReadSideEffects: false,
+          tryCatchDeoptimization: false,
+        },
         output: {
           manualChunks: (id: string) => {
             if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
@@ -79,7 +85,7 @@ export default defineConfig({
             ) {
               return "vendor-ui";
             }
-            if (id.includes("recharts")) {
+            if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-")) {
               return "vendor-charts";
             }
             if (
@@ -103,6 +109,13 @@ export default defineConfig({
               ];
               if (core.some((c) => id.includes(`@radix-ui/${c}`))) return "vendor-radix-core";
               return "vendor-radix-extra";
+            }
+            // Admin routes and their heavy deps in a separate chunk
+            if (
+              id.includes("/routes/admin/") ||
+              id.includes("/components/admin/")
+            ) {
+              return "app-admin";
             }
             return undefined;
           },

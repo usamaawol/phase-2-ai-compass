@@ -14,8 +14,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Compass, ArrowRight, Loader2, Ban } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
-import { Footer } from "@/components/compass/shared";
-import { FeedbackButton } from "@/components/compass/feedback-button";
+import { Footer, FeedbackButtonLazy } from "@/components/compass/shared";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/compass/theme-provider";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -738,7 +737,7 @@ function AppShellInner() {
             <Outlet />
           </main>
           <Footer />
-          <FeedbackButton />
+          <FeedbackButtonLazy />
         </div>
       </div>
     </>

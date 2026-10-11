@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SearchX, SlidersHorizontal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,10 @@ export function Discovery({
   lockedCategory?: string;
 }) {
   const [limit, setLimit] = useState(12);
-  const results = filterTools(tools, { ...filters, category: lockedCategory ?? filters.category });
+  const results = useMemo(
+    () => filterTools(tools, { ...filters, category: lockedCategory ?? filters.category }),
+    [filters, lockedCategory],
+  );
   const change = (key: keyof Filters, value: string) => {
     setLimit(12);
     onChange({ ...filters, [key]: value });
@@ -29,24 +32,30 @@ export function Discovery({
     setLimit(12);
     onChange({ ...emptyFilters, category: lockedCategory ?? "" });
   };
-  const tags = [...new Set(tools.flatMap((t) => t.tags))].sort();
-  const select = (key: keyof Filters, label: string, options: [string, string][]) => (
-    <div className="filter-group" key={key}>
-      <label htmlFor={`filter-${key}`}>{label}</label>
-      <select
-        className="filter-select"
-        id={`filter-${key}`}
-        value={filters[key]}
-        onChange={(e) => change(key, e.target.value)}
-      >
-        <option value="">All {label.toLowerCase()}</option>
-        {options.map(([value, text]) => (
-          <option key={value} value={value}>
-            {text}
-          </option>
-        ))}
-      </select>
-    </div>
+  const tags = useMemo(() => [...new Set(tools.flatMap((t) => t.tags))].sort(), []);
+  const select = useMemo(
+    () =>
+      (key: keyof Filters, label: string, options: [string, string][]) =>
+        (
+          <div className="filter-group" key={key}>
+            <label htmlFor={`filter-${key}`}>{label}</label>
+            <select
+              className="filter-select"
+              id={`filter-${key}`}
+              value={filters[key]}
+              onChange={(e) => change(key, e.target.value)}
+            >
+              <option value="">All {label.toLowerCase()}</option>
+              {options.map(([value, text]) => (
+                <option key={value} value={value}>
+                  {text}
+                </option>
+              ))}
+            </select>
+          </div>
+        ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filters],
   );
   return (
     <div className="discover-layout">

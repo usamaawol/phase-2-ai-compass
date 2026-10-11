@@ -224,6 +224,8 @@
 .section {
   padding-block: 58px;
   contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px; /* estimated height — avoids scroll jump */
 }
 .section-heading {
   display: flex;
@@ -313,6 +315,8 @@
 }
 .tools-band {
   border-top: 1px solid var(--border);
+  content-visibility: auto;
+  contain-intrinsic-size: 0 600px;
 }
 .tool-grid {
   display: grid;
@@ -492,6 +496,8 @@
 .footer {
   border-top: 1px solid var(--border);
   padding-block: 35px;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 280px;
 }
 .footer-top,
 .footer-bottom {
