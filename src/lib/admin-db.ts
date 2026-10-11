@@ -814,7 +814,7 @@ export async function getAnalytics(): Promise<{
     unique_visitors: visitors.size,
     logged_in_users: loggedUsers.size,
     total_views_last_7_days: daily,
-    top_pages,
+    top_pages: topPages,
     user_signups_last_7: signups,
   };
 }
