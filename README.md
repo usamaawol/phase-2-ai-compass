@@ -1,244 +1,162 @@
 # 🧭 AI Compass
 
-**Find the right AI. For the job.**
+### Find the Right AI for the Job.
 
-AI Compass is a curated directory of AI tools — search, filter, compare, and bookmark the AI products that actually fit your workflow. Sign in with Google (no passwords) to save tools and submit new ones for review.
+AI Compass is a curated directory that helps you discover, explore, and compare AI tools based on your needs. Whether you're coding, studying, researching, creating content, or building a business, AI Compass helps you find tools that fit your workflow.
 
-Built with **TanStack Start**, **React 19**, **Firebase** (Auth + Firestore), and **Tailwind CSS**.
-
----
+Discover useful AI products, explore categories, compare capabilities, and save your favorite tools in one place.
 
 ## ✨ Features
 
-- **Discover** — browse 50+ curated AI tools with categories, pricing, and skill levels
-- **Find my AI** — answer a few questions and get matched to the right tool
-- **Compare** — side-by-side feature comparison between two tools
-- **Saved tools** — bookmark tools to your personal library (sign-in required)
-- **Submit a tool** — suggest new AI tools for admin review
-- **Admin dashboard** — manage tools, categories, submissions, users, and analytics
-- **Google sign-in** — one-click authentication, no passwords
-- **Dark / light mode** — persisted theme preference
-- **Fully responsive** — works on mobile, tablet, and desktop
+- **Discover AI Tools** — Explore a growing catalog of AI products across multiple categories.
+- **Find My AI** — Answer a few questions to discover tools suited to your tasks and preferences.
+- **Compare Tools** — Compare AI tools side by side to understand their features, pricing, and capabilities.
+- **Explore Categories** — Browse tools by purpose, including coding, research, writing, design, education, and more.
+- **Save Favorites** — Bookmark tools and access your personal collection after signing in.
+- **Submit AI Tools** — Suggest new tools for review and possible inclusion in the directory.
+- **Tool Profiles** — Explore descriptions, features, supported platforms, pricing information, and official websites.
+- **Admin Dashboard** — Manage the catalog, categories, featured tools, and user submissions.
+- **Google Sign-In** — Sign in securely and conveniently using your Google account.
+- **Dark & Light Mode** — Choose the appearance that works best for you.
+- **Responsive Design** — Enjoy a consistent experience across mobile phones, tablets, and desktops.
 
----
+## 🛠️ Technology Stack
 
-## 🛠 Tech Stack
-
-| Layer | Tech |
+| Layer | Technology |
 |---|---|
-| Framework | TanStack Start (Vite + SSR) |
-| UI | React 19 + Tailwind CSS v4 |
-| Auth | Firebase Auth (Google OAuth) |
-| Database | Firebase Firestore |
-| Storage | Firebase Storage |
+| Framework | TanStack Start |
+| Frontend | React 19 |
+| Styling | Tailwind CSS v4 |
+| Authentication | Firebase Authentication |
+| Database | Cloud Firestore |
+| File Storage | Firebase Storage |
 | Charts | Recharts |
 | Icons | Lucide React |
-| Deployment | Vercel (Nitro serverless) |
+| Deployment | Vercel |
 
----
-
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js **18+** (20+ recommended)
+- Node.js 20 or later recommended
 - npm
-- A [Firebase](https://console.firebase.google.com) account
+- A Firebase project
 
-### 1. Clone & install
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/usamaawol/phase-2-ai-compass.git
 cd phase-2-ai-compass
+```
+
+### 2. Install dependencies
+
+```bash
 npm install --legacy-peer-deps
 ```
 
-> `--legacy-peer-deps` is required because some dependencies (recharts, eslint) have peer version ranges that overlap. This is expected and does not affect the build.
+### 3. Configure environment variables
 
-### 2. Configure environment variables
+Create a local environment file using the project's example:
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in your Firebase web app config (see [Firebase setup](#firebase-setup) below).
+Add the required Firebase web configuration values to `.env`. Refer to the Firebase documentation and the project's environment variable template for the required names.
 
-### 3. Start the dev server
+**Important:** Keep private credentials and secrets out of source control. Never commit your `.env` file.
+
+### 4. Start the development server
 
 ```bash
 npm run dev
 ```
 
-The app runs at **http://localhost:8080**.
+Open the local URL printed in your terminal. The default development URL is `http://localhost:8080`.
 
----
+## 🔥 Firebase Configuration
 
-## 🔥 Firebase Setup
+AI Compass uses Firebase for authentication, database operations, and file storage.
 
-Google sign-in, Firestore, and Storage all require a Firebase project.
+To run the application with your own Firebase project:
 
-### Step 1 — Create a Firebase project
+1. Create or select a project in the [Firebase Console](https://console.firebase.google.com/).
+2. Register a web application and configure its environment variables.
+3. Enable Google sign-in under Firebase Authentication.
+4. Create a Cloud Firestore database.
+5. Configure Firebase Storage if required by your deployment.
+6. Deploy and test the project's Firestore and Storage security rules.
+7. Add your development and production domains to Firebase Authentication's authorized domains.
 
-1. Go to [console.firebase.google.com](https://console.firebase.google.com)
-2. Click **Add project** and follow the wizard
-3. (Optional) Enable Google Analytics during setup
+Use restrictive security rules appropriate for your application. Administrator privileges must be assigned through a trusted process and must never be granted by an ordinary client.
 
-### Step 2 — Register a Web App
+For detailed configuration instructions, see the [Firebase documentation](https://firebase.google.com/docs).
 
-1. In the Firebase Console, click **⚙️** → **Project settings** → **Your apps**
-2. Click **Add app** → **Web** (`</>` icon)
-3. Give it a nickname (e.g. "AI Compass Web") → **Register app**
-4. Copy the `firebaseConfig` values into your `.env`:
+## ☁️ Deployment
 
-```env
-VITE_FIREBASE_API_KEY="AIzaSy..."
-VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID="your-project-id"
-VITE_FIREBASE_STORAGE_BUCKET="your-project.firebasestorage.app"
-VITE_FIREBASE_MESSAGING_SENDER_ID="123456789012"
-VITE_FIREBASE_APP_ID="1:123456789012:web:abcdef1234567890"
-VITE_FIREBASE_MEASUREMENT_ID=""  # optional
-```
+AI Compass can be deployed to [Vercel](https://vercel.com/).
 
-### Step 3 — Enable Google sign-in
+1. Push your project to GitHub.
+2. Import the repository into Vercel.
+3. Configure the required environment variables in your Vercel project settings.
+4. Deploy the application using the project's configured build settings.
+5. Add your production domain to Firebase Authentication's authorized domains.
+6. Test authentication, database permissions, navigation, and responsive layouts after deployment.
 
-1. Go to **Authentication** → **Sign-in method**
-2. Click **Google** → toggle **Enable**
-3. Select a support email → **Save**
-
-### Step 4 — Create Firestore Database
-
-1. Go to **Firestore Database** → **Create database**
-2. Choose **Start in production mode**
-3. Select a location → **Enable**
-
-### Step 5 — (Optional) Create Storage
-
-1. Go to **Storage** → **Get started**
-2. Start in **production mode** → **Next** → **Done**
-
-### Step 6 — Deploy security rules
-
-The project ships with `firebase.rules` (Firestore) and `firebase.storage.rules` (Storage). Deploy them:
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase use YOUR_PROJECT_ID
-firebase deploy --only firestore:rules
-firebase deploy --only storage:rules
-firebase deploy --only firestore:indexes
-```
-
-### Step 7 — Authorize your domains
-
-Firebase automatically allows `localhost`. For production, add your Vercel/custom domain:
-
-1. **Authentication** → **Settings** → **Authorized domains**
-2. Click **Add domain** → enter your production URL (e.g. `aicompass.vercel.app`)
-
----
-
-## 👑 Make Yourself an Admin
-
-The admin dashboard (`/admin`) is protected. To become an admin:
-
-1. Sign in to the app with your Google account once (this creates your user record)
-2. Go to **Firebase Console** → **Firestore Database**
-3. Create collection `admin_users`
-4. Add document with:
-   - **Document ID** = your Firebase Auth UID (find it in **Authentication** → **Users**)
-   - **Field** `role` = `"admin"` (string)
-
-You'll now see the **Admin** link in the sidebar.
-
----
-
-## ☁️ Deploy to Vercel
-
-1. Push your code to GitHub.
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repo.
-3. Set the **Environment Variables** (all `VITE_FIREBASE_*` from `.env`).
-4. The `vercel.json` in this repo already configures:
-   - Install command: `npm install --legacy-peer-deps`
-   - Build command: `NITRO_PRESET=vercel npm run build`
-5. Click **Deploy**.
-
-After the first deploy, add your Vercel domain to Firebase **Authorized domains** (Step 7 above) so Google sign-in works in production.
-
----
+Never include private credentials in your repository or public documentation.
 
 ## 📁 Project Structure
 
-```
+```text
 src/
 ├── components/
-│   ├── compass/          # Sidebar, shared UI, feedback button
-│   └── ui/               # Reusable primitives (Button, etc.)
-├── hooks/
-│   ├── use-auth.tsx      # Auth context (Google sign-in, state)
-│   ├── use-admin.tsx     # Admin role check
-│   └── use-bookmarks.tsx # Saved tools
-├── lib/
-│   ├── catalog.ts        # Typed tool/category catalog (demo data)
-│   ├── firebase.ts       # Firebase init + auth + Firestore helpers
-│   └── admin-db.ts       # Firestore operations for admin panel
-├── routes/               # TanStack file-based routes
-│   ├── index.tsx         # Home / hero
-│   ├── discover.tsx      # Tool catalog + filters
-│   ├── find.tsx          # "Find my AI" quiz
-│   ├── compare.tsx       # Side-by-side comparison
-│   ├── categories.tsx    # Category list
-│   ├── category.$slug.tsx  # Single category
-│   ├── tool.$slug.tsx    # Tool detail page
-│   ├── saved.tsx         # Bookmarked tools
-│   ├── submit.tsx        # Suggest a tool
-│   ├── account.tsx       # User profile
-│   ├── admin.tsx         # Admin dashboard layout
-│   ├── about.tsx, faq.tsx, terms.tsx, privacy.tsx, changelog.tsx
-│   └── __root.tsx        # Root layout, theme, auth gate
-└── styles.css            # Global semantic design system
+│   ├── compass/       # Shared application components
+│   └── ui/            # Reusable interface components
+├── hooks/             # Authentication and application hooks
+├── lib/               # Firebase, catalog, and data utilities
+├── routes/            # Application pages and routes
+└── styles.css         # Global styles and design tokens
 ```
 
----
+The project uses TanStack's file-based routing architecture. Individual files and responsibilities may evolve as the application grows.
 
 ## 📜 Available Scripts
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start the dev server (http://localhost:8080) |
-| `npm run build` | Production build (Vite + Nitro) |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
 | `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format all files with Prettier |
-| `npm run test` | Run Vitest tests |
+| `npm run lint` | Run code quality checks |
+| `npm run format` | Format the codebase |
+| `npm run test` | Run the test suite |
 
----
+## 🔐 Security
 
-## ❓ Troubleshooting
+AI Compass is designed to use Firebase Authentication and security rules to protect account-specific and administrative functionality.
 
-### Google sign-in doesn't work
+- Keep secrets and private credentials out of Git.
+- Restrict access to user data and administrative operations.
+- Validate submitted information.
+- Review security rules before deployment.
+- Do not rely on hidden routes or frontend checks as the only form of authorization.
 
-The most common causes and fixes:
+## 🤝 Contributing
 
-| Symptom / Error | Fix |
-|---|---|
-| `auth/operation-not-allowed` | Enable **Google** in Firebase Console → Authentication → Sign-in method |
-| `auth/unauthorized-domain` | Add your domain to Authentication → Settings → Authorized domains (localhost is auto-allowed) |
-| `auth/api-key-not-valid` | Check `VITE_FIREBASE_API_KEY` matches the value in Project settings → Your apps |
-| `Firebase is not configured` | Set all `VITE_FIREBASE_*` env vars (and redeploy on Vercel if you changed them) |
-| Pop-up blocked / nothing happens | The app automatically falls back to redirect sign-in. If still failing, allow pop-ups for the site |
-| `auth/web-storage-unsupported` | Third-party cookies / storage are blocked. Enable them or use redirect sign-in |
-| Sign-in works locally but not on Vercel | Make sure your Vercel domain is in **Authorized domains** and all env vars are set in Vercel project settings |
+Contributions, suggestions, and bug reports are welcome.
 
-### Build fails on Vercel
+1. Fork the repository.
+2. Create a branch for your changes.
+3. Make and test your changes.
+4. Submit a pull request describing your improvements.
 
-- The `vercel.json` uses `NITRO_PRESET=vercel` so Nitro emits the correct serverless function directory.
-- If you see `Cannot find package 'vite-tsconfig-paths'` — make sure it's in `devDependencies` (it's required by `@lovable.dev/vite-tanstack-config`).
-- Always use `npm install --legacy-peer-deps` (already set in `vercel.json`).
-
----
+Please keep changes focused, maintain consistent code style, and avoid committing credentials or other sensitive information.
 
 ## 📄 License
 
-MIT
+Add your chosen license before distributing the project publicly. If no license has been selected, the project remains subject to the applicable copyright rules.
+
+---
+
+**AI Compass — Find the Right AI for the Job.**
