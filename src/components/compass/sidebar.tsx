@@ -53,6 +53,10 @@ const NAV: NavItem[] = [
 function authErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };
   const code = err?.code;
+  const msg = err?.message ?? "";
+  if (msg.includes("Firebase is not configured")) {
+    return "Firebase is not configured. Set the VITE_FIREBASE_* environment variables in your hosting provider's Production environment and redeploy.";
+  }
   if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
     return "Invalid email or password. Please try again.";
   }
@@ -78,7 +82,7 @@ function authErrorMessage(e: unknown): string {
     return "Firebase is not configured. Set the VITE_FIREBASE_* environment variables.";
   }
   if (code) return `Sign-in failed (${code}). Please try again.`;
-  return "Sign-in failed. Please try again.";
+  return msg ? `Sign-in failed: ${msg}` : "Sign-in failed. Please try again.";
 }
 
 /* ── Login modal ─────────────────────────────────────────────── */
