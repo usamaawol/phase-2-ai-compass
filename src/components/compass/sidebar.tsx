@@ -54,6 +54,7 @@ function authErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };
   const code = err?.code;
   const msg = err?.message ?? "";
+  if (typeof console !== "undefined") console.error("[auth error]", e);
   if (msg.includes("Firebase is not configured")) {
     return "Firebase is not configured. Set the VITE_FIREBASE_* environment variables in your hosting provider's Production environment and redeploy.";
   }
