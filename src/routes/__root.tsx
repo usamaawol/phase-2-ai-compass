@@ -11,7 +11,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { LogIn, Compass, ArrowRight, Loader2, Ban } from "lucide-react";
+import { Compass, ArrowRight, Loader2, Ban } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/compass/sidebar";
 import { Footer } from "@/components/compass/shared";
@@ -260,10 +260,16 @@ function RootComponent() {
 const PROTECTED_PATHS = ["/account", "/admin"];
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const isProtected = PROTECTED_PATHS.some(
     (p) => location.pathname === p || location.pathname.startsWith(p + "/"),
@@ -285,12 +291,38 @@ function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    const handleSignIn = async () => {
+    function authErrorMsg(e: unknown): string {
+      const err = e as { code?: string };
+      const code = err?.code;
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found")
+        return "Invalid email or password. Please try again.";
+      if (code === "auth/email-already-in-use")
+        return "An account with this email already exists. Sign in instead.";
+      if (code === "auth/weak-password") return "Password is too weak. Use at least 6 characters.";
+      if (code === "auth/invalid-email") return "Please enter a valid email address.";
+      if (code === "auth/operation-not-allowed")
+        return "Email sign-in is not enabled. Enable it in Firebase Console → Authentication.";
+      if (code === "auth/too-many-requests")
+        return "Too many attempts. Try again later or reset your password.";
+      if (code === "auth/network-request-failed") return "Network error. Check your connection and try again.";
+      if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key")
+        return "Firebase is not configured. Set the VITE_FIREBASE_* environment variables.";
+      if (code) return `Sign-in failed (${code}). Please try again.`;
+      return "Sign-in failed. Please try again.";
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!email.trim() || !password.trim()) return;
+      setBusy(true);
       setSignInError(null);
+      setSuccess(null);
       try {
-        await signIn();
-        // If we get here, the user signed in via popup. For redirect sign-in,
-        // the page navigates away and comes back; onAuthStateChanged picks it up.
+        if (mode === "signup") {
+          await signUp(email.trim(), password, name.trim() || undefined);
+        } else {
+          await signIn(email.trim(), password);
+        }
         const pn = safeString(location?.pathname, "/");
         const sh = safeString(location?.search, "");
         let target = "/";
@@ -302,27 +334,26 @@ function RequireAuth({ children }: { children: ReactNode }) {
         }
         navigate({ to: target, replace: true });
       } catch (err) {
-        const code = (err as { code?: string })?.code;
-        const msg = err instanceof Error ? err.message : String(err);
-        if (code === "auth/operation-not-allowed") {
-          setSignInError(
-            "Google sign-in is not enabled in Firebase Console. Enable Authentication → Sign-in method → Google.",
-          );
-        } else if (code === "auth/unauthorized-domain") {
-          setSignInError(
-            "This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.",
-          );
-        } else if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key") {
-          setSignInError("Firebase API key is invalid. Check VITE_FIREBASE_API_KEY environment variable.");
-        } else if (code === "auth/web-storage-unsupported") {
-          setSignInError("Browser storage is disabled. Enable cookies / third-party storage and try again.");
-        } else if (code === "auth/network-request-failed") {
-          setSignInError("Network error. Check your connection and try again.");
-        } else if (msg.includes("Firebase is not configured")) {
-          setSignInError("Firebase is not configured. Set the VITE_FIREBASE_* environment variables.");
-        } else {
-          setSignInError("Sign-in failed. Please try again.");
-        }
+        setSignInError(authErrorMsg(err));
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    const handleResetPassword = async () => {
+      if (!email.trim()) {
+        setSignInError("Enter your email first, then click Forgot password.");
+        return;
+      }
+      setBusy(true);
+      setSignInError(null);
+      try {
+        await resetPassword(email.trim());
+        setSuccess("Password reset link sent! Check your email.");
+      } catch (err) {
+        setSignInError(authErrorMsg(err));
+      } finally {
+        setBusy(false);
       }
     };
 
@@ -334,20 +365,99 @@ function RequireAuth({ children }: { children: ReactNode }) {
               <Compass size={36} strokeWidth={1.5} />
               <span>{SITE_NAME}</span>
             </div>
-            <h1 className="auth-gate-title">Sign in required</h1>
+            <h1 className="auth-gate-title">
+              {mode === "signup" ? "Create your account" : "Sign in required"}
+            </h1>
             <p className="auth-gate-desc">
-              You need a free account to access this page. Sign in with Google in one click.
+              {mode === "signup"
+                ? "Sign up to access this page and sync your bookmarks across devices."
+                : "You need an account to access this page. Sign in with your email and password."}
             </p>
+
+            <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
+              {mode === "signup" && (
+                <div className="login-field">
+                  <label htmlFor="gate-name">Name</label>
+                  <input
+                    id="gate-name"
+                    className="login-input"
+                    type="text"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
+                  />
+                </div>
+              )}
+              <div className="login-field">
+                <label htmlFor="gate-email">Email</label>
+                <input
+                  id="gate-email"
+                  className="login-input"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <div className="login-field">
+                <label htmlFor="gate-password">Password</label>
+                <input
+                  id="gate-password"
+                  className="login-input"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  required
+                />
+              </div>
+
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  className="login-forgot"
+                  onClick={handleResetPassword}
+                  disabled={busy}
+                >
+                  Forgot password?
+                </button>
+              )}
+
+              <Button size="lg" type="submit" className="auth-gate-signin" disabled={busy}>
+                {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
+              </Button>
+            </form>
+
             {signInError && (
               <p className="login-error" role="alert" style={{ marginTop: 16 }}>
                 {signInError}
               </p>
             )}
-            <div className="auth-gate-actions">
-              <Button size="lg" onClick={handleSignIn} className="auth-gate-signin">
-                <LogIn size={18} />
-                Sign in with Google
-              </Button>
+            {success && (
+              <p className="login-success" style={{ marginTop: 16 }}>
+                {success}
+              </p>
+            )}
+
+            <p className="login-toggle">
+              {mode === "signup" ? "Already have an account?" : "Don't have an account?"}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "signup" ? "signin" : "signup");
+                  setSignInError(null);
+                  setSuccess(null);
+                }}
+              >
+                {mode === "signup" ? "Sign in" : "Sign up"}
+              </button>
+            </p>
+
+            <div className="auth-gate-actions" style={{ marginTop: 8 }}>
               <Button size="lg" variant="outline" asChild className="auth-gate-home">
                 <Link to="/">
                   <ArrowRight size={16} className="rotate-180" />

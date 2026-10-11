@@ -45,7 +45,7 @@ export const Route = createFileRoute("/faq")({
               name: "Why do I need to sign in?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "The home page is public. Sign-in with Google is required to access Discover, Categories, Compare, Find my AI, and Submit a Tool — this helps us prevent spam submissions.",
+                text: "Browsing is completely public. Sign-in (email and password) is only required for your account page, saved tools sync, and admin features.",
               },
             },
             {
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/faq")({
               name: "How do I submit a tool?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Sign in with Google, then go to Submit a Tool. Provide the name, official URL, and a short description. Our team reviews every submission before publishing.",
+                text: "Anyone can suggest a tool using the Feedback button on any page. No sign-in required.",
               },
             },
           ],
@@ -75,11 +75,11 @@ const FAQS = [
   },
   {
     q: "Why do I need to sign in to use some features?",
-    a: "The home page, About, FAQ, Privacy, Terms, and Changelog are fully public. Sign-in (Google) is required for Discover, Categories, Compare, Find my AI, Saved tools, and Submit a Tool. This helps us prevent spam and lets us associate bookmarks and submissions with your account.",
+    a: "Browsing the catalog is completely public — no account needed. Sign-in (email and password) is only required for your account page and to sync your saved bookmarks across devices.",
   },
   {
     q: "How do I submit an AI tool?",
-    a: "Sign in with Google, then visit the Submit a Tool page. Provide the tool name, official website URL (https only), company name, and a short description. Our team reviews every submission before it appears in the catalog.",
+    a: "Use the Feedback button in the bottom-right corner of any page and select 'Suggest an AI Tool'. No sign-in required. Our team reviews every suggestion before it appears in the catalog.",
   },
   {
     q: "What are the guidelines for submissions?",

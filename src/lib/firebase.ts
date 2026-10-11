@@ -1,10 +1,10 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut,
   onAuthStateChanged as _onAuthStateChanged,
   type Auth,
@@ -219,54 +219,39 @@ export const orderBy = safeOrderBy;
 export const limit = safeLimit;
 export const onSnapshot = safeOnSnapshot;
 
-export async function signInWithGoogle() {
+export async function signInWithEmail(email: string, password: string) {
   if (!firebaseReady) {
     throw new Error(
       "Firebase is not configured. Set VITE_FIREBASE_API_KEY and related env vars to enable sign-in.",
     );
   }
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-
-  try {
-    return await signInWithPopup(auth, provider);
-  } catch (err) {
-    // Error codes that indicate the popup was blocked or the user
-    // cancelled before it opened — fall back to redirect flow which
-    // cannot be blocked by browser popup blockers.
-    const code = (err as { code?: string })?.code;
-    const useRedirect =
-      code === "auth/popup-blocked" ||
-      code === "auth/popup-closed-by-user" ||
-      code === "auth/cancelled-popup-request" ||
-      code === "auth/web-storage-unsupported" ||
-      (code == null && err instanceof Error && /popup|block/i.test(err.message));
-
-    if (useRedirect) {
-      // signInWithRedirect returns a promise that resolves AFTER the
-      // redirect is initiated — the actual sign-in result is picked up
-      // by resolvePendingRedirect() on the next page load.
-      return await signInWithRedirect(auth, provider);
-    }
-
-    throw err;
-  }
+  return await signInWithEmailAndPassword(auth, email, password);
 }
 
-/**
- * Must be called once on app startup on the client. If the user just came
- * back from a signInWithRedirect() Google flow, this consumes and returns
- * the result so onAuthStateChanged fires correctly. Errors (e.g. user
- * cancelled the redirect flow) are swallowed silently.
- */
-export async function resolvePendingRedirect(): Promise<User | null> {
-  if (!firebaseReady || typeof window === "undefined") return null;
-  try {
-    const result = await getRedirectResult(auth);
-    return result?.user ?? null;
-  } catch {
-    return null;
+export async function signUpWithEmail(email: string, password: string, displayName?: string) {
+  if (!firebaseReady) {
+    throw new Error(
+      "Firebase is not configured. Set VITE_FIREBASE_API_KEY and related env vars to enable sign-up.",
+    );
   }
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  if (displayName && credential.user) {
+    try {
+      await updateProfile(credential.user, { displayName });
+    } catch {
+      /* profile update is best-effort */
+    }
+  }
+  return credential;
+}
+
+export async function resetPassword(email: string) {
+  if (!firebaseReady) {
+    throw new Error(
+      "Firebase is not configured. Set VITE_FIREBASE_API_KEY and related env vars.",
+    );
+  }
+  return await sendPasswordResetEmail(auth, email);
 }
 
 export async function signOutUser() {

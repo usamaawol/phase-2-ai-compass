@@ -49,69 +49,82 @@ const NAV: NavItem[] = [
   { to: "/about", label: "About", icon: Info },
 ];
 
-/* ── Google SVG ─────────────────────────────────────────────── */
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <path
-        fill="#EA4335"
-        d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.5 2.7 13.6l7.8 6C12.4 13 17.8 9.5 24 9.5z"
-      />
-      <path
-        fill="#4285F4"
-        d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M10.5 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.3-3 .8-4.4l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8-6.2z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.6 42.5 14.6 48 24 48z"
-      />
-    </svg>
-  );
+/* ── Auth error helper ───────────────────────────────────────── */
+function authErrorMessage(e: unknown): string {
+  const err = e as { code?: string; message?: string };
+  const code = err?.code;
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+    return "Invalid email or password. Please try again.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "An account with this email already exists. Sign in instead.";
+  }
+  if (code === "auth/weak-password") {
+    return "Password is too weak. Use at least 6 characters.";
+  }
+  if (code === "auth/invalid-email") {
+    return "Please enter a valid email address.";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Email sign-in is not enabled. Enable it in Firebase Console → Authentication.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Too many attempts. Try again later or reset your password.";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Network error. Check your connection and try again.";
+  }
+  if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key") {
+    return "Firebase is not configured. Set the VITE_FIREBASE_* environment variables.";
+  }
+  if (code) return `Sign-in failed (${code}). Please try again.`;
+  return "Sign-in failed. Please try again.";
 }
 
 /* ── Login modal ─────────────────────────────────────────────── */
 function LoginModal({ onClose }: { onClose: () => void }) {
-  const { signIn } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  async function handleGoogle() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
     setBusy(true);
     setError("");
+    setSuccess("");
     try {
-      await signIn();
-      onClose();
-    } catch (e: unknown) {
-      const err = e as { code?: string; message?: string };
-      const code = err?.code;
-      const msg = err?.message ?? String(e);
-      if (code === "auth/operation-not-allowed") {
-        setError(
-          "Google sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method → Google.",
-        );
-      } else if (code === "auth/unauthorized-domain") {
-        setError(
-          "This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.",
-        );
-      } else if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key" || msg.includes("Firebase is not configured")) {
-        setError("Firebase is not configured. Set the VITE_FIREBASE_* environment variables.");
-      } else if (code === "auth/web-storage-unsupported") {
-        setError("Browser storage is disabled. Enable cookies / third-party storage and try again.");
-      } else if (code === "auth/network-request-failed") {
-        setError("Network error. Check your connection and try again.");
-      } else if (code === "auth/popup-blocked") {
-        setError("Pop-up blocked. Allow pop-ups for this site and try again.");
-      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        setError("Sign-in cancelled. Please try again.");
-      } else if (code) {
-        setError(`Sign-in failed (${code}). Please try again.`);
+      if (mode === "signup") {
+        await signUp(email.trim(), password, name.trim() || undefined);
       } else {
-        setError("Sign-in failed. Please try again.");
+        await signIn(email.trim(), password);
       }
+      onClose();
+    } catch (err) {
+      setError(authErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!email.trim()) {
+      setError("Enter your email first, then click Forgot password.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await resetPassword(email.trim());
+      setSuccess("Password reset link sent! Check your email.");
+    } catch (err) {
+      setError(authErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -134,23 +147,80 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           <Compass size={28} strokeWidth={1.5} />
           <span>AI Compass</span>
         </div>
-        <h2 className="login-title">Sign in to AI Compass</h2>
+        <h2 className="login-title">
+          {mode === "signup" ? "Create your account" : "Welcome back"}
+        </h2>
         <p className="login-subtitle">
-          Sync your bookmarks across devices, manage your profile, and get updates on your feedback.
-          <br />
-          Free · No password needed.
+          {mode === "signup"
+            ? "Sign up to sync your bookmarks across devices and manage your profile."
+            : "Sign in to access your saved tools and account settings."}
         </p>
-        <button className="google-btn" onClick={handleGoogle} disabled={busy}>
-          <GoogleIcon />
-          <span>{busy ? "Signing in…" : "Continue with Google"}</span>
-        </button>
-        {error && (
-          <p className="login-error" role="alert">
-            {error}
-          </p>
-        )}
+
+        <form onSubmit={handleSubmit}>
+          {mode === "signup" && (
+            <div className="login-field">
+              <label htmlFor="signup-name">Name</label>
+              <input
+                id="signup-name"
+                className="login-input"
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+              />
+            </div>
+          )}
+          <div className="login-field">
+            <label htmlFor="auth-email">Email</label>
+            <input
+              id="auth-email"
+              className="login-input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div className="login-field">
+            <label htmlFor="auth-password">Password</label>
+            <input
+              id="auth-password"
+              className="login-input"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              required
+            />
+          </div>
+
+          {mode === "signin" && (
+            <button type="button" className="login-forgot" onClick={handleResetPassword} disabled={busy}>
+              Forgot password?
+            </button>
+          )}
+
+          <button className="auth-submit-btn" type="submit" disabled={busy}>
+            {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
+          </button>
+        </form>
+
+        {error && <p className="login-error" role="alert">{error}</p>}
+        {success && <p className="login-success">{success}</p>}
+
+        <p className="login-toggle">
+          {mode === "signup" ? "Already have an account?" : "Don't have an account?"}
+          <button type="button" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(""); setSuccess(""); }}>
+            {mode === "signup" ? "Sign in" : "Sign up"}
+          </button>
+        </p>
+
         <p className="login-note">
-          By signing in you agree to our{" "}
+          By continuing you agree to our{" "}
           <a href="/terms" className="text-primary">
             terms
           </a>{" "}
@@ -301,7 +371,7 @@ function NavContent({
         ) : (
           <button className="nav-signin-btn" onClick={onLoginRequest}>
             <LogIn size={15} />
-            <span>Sign in with Google</span>
+            <span>Sign in</span>
           </button>
         )}
       </div>

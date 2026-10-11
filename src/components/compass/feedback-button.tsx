@@ -4,6 +4,7 @@
  * Submits to tool_submissions with _type: 'feedback'.
  */
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { MessageSquarePlus, X, Send, CheckCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { submitFeedback, type FeedbackRecord } from "@/lib/admin-db";
@@ -17,7 +18,7 @@ const TYPES: { value: FeedbackRecord["type"]; label: string }[] = [
 ];
 
 export function FeedbackButton() {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<FeedbackRecord["type"]>("suggest_tool");
   const [message, setMessage] = useState("");
@@ -140,19 +141,9 @@ export function FeedbackButton() {
                   ) : (
                     <span className="feedback-anon">
                       Sending anonymously
-                      <button
-                        type="button"
-                        className="feedback-signin-link"
-                        onClick={async () => {
-                          try {
-                            await signIn();
-                          } catch {
-                            /* sign-in cancelled or failed; user can still send anonymously */
-                          }
-                        }}
-                      >
+                      <Link to="/account" className="feedback-signin-link">
                         <LogIn size={12} /> Sign in
-                      </button>
+                      </Link>
                     </span>
                   )}
                   <button

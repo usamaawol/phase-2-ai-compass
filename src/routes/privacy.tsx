@@ -27,18 +27,21 @@ function PrivacyPage() {
       <div className="prose-page">
         <h2>What we collect</h2>
         <p>
-          When you sign in with Google, we receive your Google account name, email address, and
-          profile photo. This information is used only to identify your account within AI Compass.
+          When you sign up or sign in with your email and password, we store your email address and
+          an optional display name. This information is used only to identify your account within AI
+          Compass. We never store your password — it is handled securely by Firebase Authentication.
         </p>
         <p>
-          We store your bookmarks and any tool submissions you make. Bookmarks are stored locally in
-          your browser. Submissions are stored in our database for review by the AI Compass team.
+          We store your bookmarks and any tool submissions you make. Bookmarks are stored in our
+          database (synced across your devices) and locally in your browser. Submissions are stored
+          in our database for review by the AI Compass team.
         </p>
 
         <h2>What we do not collect</h2>
         <p>
           We do not track your browsing history, sell your data to third parties, or serve
-          advertising. We do not store passwords — authentication is handled entirely by Google.
+          advertising. We do not store your password — authentication is handled securely by Firebase
+          Authentication.
         </p>
 
         <h2>Cookies and local storage</h2>
@@ -51,8 +54,7 @@ function PrivacyPage() {
         <p>We use:</p>
         <ul>
           <li>
-            <strong>Firebase Authentication</strong> (Google) — for sign-in. Google's Privacy Policy
-            applies.
+            <strong>Firebase Authentication</strong> — for sign-in. Google's Privacy Policy applies.
           </li>
           <li>
             <strong>Firebase Firestore</strong> — for storing tool submissions, catalog data, bookmarks, and user profiles.

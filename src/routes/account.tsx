@@ -155,7 +155,7 @@ function AccountPage() {
               <User size={28} />
             </div>
           )}
-          <span className="account-avatar-badge" title="Profile photo from Google">
+          <span className="account-avatar-badge" title="Profile photo">
             <Camera size={11} />
           </span>
         </div>
@@ -229,7 +229,7 @@ function AccountPage() {
                 disabled
                 style={{ opacity: 0.6, cursor: "not-allowed" }}
               />
-              <p className="admin-field-hint">Managed by Google — cannot be changed here.</p>
+              <p className="admin-field-hint">Your email address cannot be changed here.</p>
             </div>
             <div className="admin-field">
               <label className="admin-field-label" htmlFor="acc-bio">

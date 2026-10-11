@@ -15,7 +15,9 @@ interface AuthCtx {
   loading: boolean;
   banned: boolean;
   banMessage?: string | null;
-  signIn: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -25,6 +27,8 @@ const AuthContext = createContext<AuthCtx>({
   banned: false,
   banMessage: null,
   signIn: async () => {},
+  signUp: async () => {},
+  resetPassword: async () => {},
   signOut: async () => {},
 });
 
@@ -38,13 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Dynamically import firebase only on the client
     let unsub: (() => void) | undefined;
     import("@/lib/firebase")
-      .then(async ({ auth, onAuthStateChanged, resolvePendingRedirect }) => {
-        // If the user just returned from a signInWithRedirect() Google flow,
-        // consume the pending result so onAuthStateChanged fires the signed-in user.
-        try {
-          await resolvePendingRedirect();
-        } catch {}
-
+      .then(async ({ auth, onAuthStateChanged }) => {
         const { isUserBanned, recordUserActivity } = await import("@/lib/admin-db");
         unsub = onAuthStateChanged(auth, async (u) => {
           const authUser = u
@@ -100,28 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub?.();
   }, []);
 
-  async function signIn() {
-    try {
-      const { signInWithGoogle } = await import("@/lib/firebase");
-      await signInWithGoogle();
-    } catch (err) {
-      // signInWithGoogle already handles popup-blocked → redirect fallback
-      // internally. For user-initiated cancellations, silently no-op so we
-      // don't flash a misleading error. For any *other* error (Firebase not
-      // configured, Google provider disabled, unauthorized domain, etc.),
-      // re-throw so the calling UI (LoginModal / auth gate) can surface it.
-      const code = (err as { code?: string })?.code;
-      const cancelled =
-        code === "auth/popup-blocked" ||
-        code === "auth/cancelled-popup-request" ||
-        code === "auth/popup-closed-by-user" ||
-        code === "auth/user-cancelled";
+  async function signIn(email: string, password: string) {
+    const { signInWithEmail } = await import("@/lib/firebase");
+    await signInWithEmail(email, password);
+  }
 
-      if (cancelled) return;
+  async function signUp(email: string, password: string, displayName?: string) {
+    const { signUpWithEmail } = await import("@/lib/firebase");
+    await signUpWithEmail(email, password, displayName);
+  }
 
-      if (typeof window !== "undefined") console.warn("[sign-in]", err);
-      throw err;
-    }
+  async function resetPassword(email: string) {
+    const { resetPassword: resetPw } = await import("@/lib/firebase");
+    await resetPw(email);
   }
 
   async function signOut() {
@@ -132,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, banned, banMessage, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, banned, banMessage, signIn, signUp, resetPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );

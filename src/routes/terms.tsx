@@ -32,8 +32,8 @@ function TermsPage() {
 
         <h2>Accounts</h2>
         <p>
-          Sign-in is via Google OAuth. You are responsible for any activity under your account. We
-          may suspend accounts that abuse the platform.
+          Sign-in is via email and password. You are responsible for any activity under your
+          account. We may suspend accounts that abuse the platform.
         </p>
 
         <h2>Tool submissions</h2>
