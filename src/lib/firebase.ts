@@ -1,6 +1,10 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -243,6 +247,17 @@ export async function signUpWithEmail(email: string, password: string, displayNa
     }
   }
   return credential;
+}
+
+export async function signInWithGoogle() {
+  if (!firebaseReady) {
+    throw new Error(
+      "Firebase is not configured. Set VITE_FIREBASE_API_KEY and related env vars to enable sign-in.",
+    );
+  }
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  return await signInWithPopup(auth, provider);
 }
 
 export async function resetPassword(email: string) {

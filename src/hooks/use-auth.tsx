@@ -17,6 +17,7 @@ interface AuthCtx {
   banMessage?: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthCtx>({
   banMessage: null,
   signIn: async () => {},
   signUp: async () => {},
+  signInWithGoogle: async () => {},
   resetPassword: async () => {},
   signOut: async () => {},
 });
@@ -108,6 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signUpWithEmail(email, password, displayName);
   }
 
+  async function signInWithGoogle() {
+    const { signInWithGoogle: googleSignIn } = await import("@/lib/firebase");
+    await googleSignIn();
+  }
+
   async function resetPassword(email: string) {
     const { resetPassword: resetPw } = await import("@/lib/firebase");
     await resetPw(email);
@@ -121,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, banned, banMessage, signIn, signUp, resetPassword, signOut }}>
+    <AuthContext.Provider value={{ user, loading, banned, banMessage, signIn, signUp, signInWithGoogle, resetPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );
