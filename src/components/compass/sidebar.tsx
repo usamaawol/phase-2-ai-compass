@@ -86,16 +86,32 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       await signIn();
       onClose();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes("api-key-not-valid") || msg.includes("api-key-not-found"))
-        setError("Firebase is not configured. Check VITE_FIREBASE_* environment variables.");
-      else if (msg.includes("popup-closed") || msg.includes("cancelled-popup"))
-        setError("Sign-in cancelled. Please try again.");
-      else if (msg.includes("popup-blocked"))
-        setError("Pop-up blocked. Allow pop-ups for this site and try again.");
-      else if (msg.includes("network-request-failed"))
+      const err = e as { code?: string; message?: string };
+      const code = err?.code;
+      const msg = err?.message ?? String(e);
+      if (code === "auth/operation-not-allowed") {
+        setError(
+          "Google sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method → Google.",
+        );
+      } else if (code === "auth/unauthorized-domain") {
+        setError(
+          "This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.",
+        );
+      } else if (code === "auth/api-key-not-valid" || code === "auth/invalid-api-key" || msg.includes("Firebase is not configured")) {
+        setError("Firebase is not configured. Set the VITE_FIREBASE_* environment variables.");
+      } else if (code === "auth/web-storage-unsupported") {
+        setError("Browser storage is disabled. Enable cookies / third-party storage and try again.");
+      } else if (code === "auth/network-request-failed") {
         setError("Network error. Check your connection and try again.");
-      else setError("Sign-in failed. Please try again.");
+      } else if (code === "auth/popup-blocked") {
+        setError("Pop-up blocked. Allow pop-ups for this site and try again.");
+      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        setError("Sign-in cancelled. Please try again.");
+      } else if (code) {
+        setError(`Sign-in failed (${code}). Please try again.`);
+      } else {
+        setError("Sign-in failed. Please try again.");
+      }
     } finally {
       setBusy(false);
     }
