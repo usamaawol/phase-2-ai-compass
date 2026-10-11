@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, BookmarkX, ArrowUpRight } from "lucide-react";
+import { Bookmark, BookmarkX, ArrowUpRight, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { tools } from "@/lib/catalog";
 import { ToolGrid } from "@/components/compass/shared";
 import { useBookmarks } from "@/hooks/use-bookmarks";
+import { useAuth } from "@/hooks/use-auth";
 import { pageHead } from "@/lib/metadata";
 
 export const Route = createFileRoute("/saved")({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/saved")({
 
 function SavedPage() {
   const { bookmarks, toggle, loading } = useBookmarks();
+  const { user } = useAuth();
   const saved = tools.filter((t) => bookmarks.has(t.slug));
 
   if (loading) {
@@ -32,6 +34,30 @@ function SavedPage() {
         <h1>Saved tools</h1>
         <p>Tools you've bookmarked for quick access.</p>
       </div>
+
+      {!user && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "14px 18px",
+            marginBottom: 24,
+            borderRadius: 12,
+            background: "var(--accent)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <Cloud size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
+          <p style={{ margin: 0, flex: 1, fontSize: 14, color: "var(--foreground)" }}>
+            <strong>Sign in</strong> to sync your bookmarks across devices. Your current
+            bookmarks are saved locally in this browser only.
+          </p>
+          <Button size="sm" asChild>
+            <Link to="/account">Sign in</Link>
+          </Button>
+        </div>
+      )}
 
       {saved.length === 0 ? (
         <div className="saved-empty">
@@ -60,3 +86,4 @@ function SavedPage() {
     </div>
   );
 }
+

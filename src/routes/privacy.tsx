@@ -55,7 +55,7 @@ function PrivacyPage() {
             applies.
           </li>
           <li>
-            <strong>Supabase</strong> — for storing tool submissions and catalog data.
+            <strong>Firebase Firestore</strong> — for storing tool submissions, catalog data, bookmarks, and user profiles.
           </li>
           <li>
             <strong>Vercel</strong> — for hosting. Vercel may collect standard access logs.

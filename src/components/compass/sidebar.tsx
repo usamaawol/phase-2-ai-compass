@@ -11,7 +11,6 @@ import {
   Moon,
   LogIn,
   LogOut,
-  Lock,
   X,
   Menu,
   ShieldCheck,
@@ -29,7 +28,6 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ElementType;
-  protected?: boolean;
   /**
    * When true, this nav entry is ONLY rendered if the current signed-in
    * user has /admin_users/{uid}.role == 'admin'. Random users, anonymous
@@ -40,11 +38,11 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/discover", label: "Discover", icon: Search, protected: true },
-  { to: "/find", label: "Find my AI", icon: Lightbulb, protected: true },
-  { to: "/categories", label: "Categories", icon: LayoutGrid, protected: true },
-  { to: "/compare", label: "Compare", icon: GitCompareArrows, protected: true },
-  { to: "/saved", label: "Saved", icon: Bookmark, protected: true },
+  { to: "/discover", label: "Discover", icon: Search },
+  { to: "/find", label: "Find my AI", icon: Lightbulb },
+  { to: "/categories", label: "Categories", icon: LayoutGrid },
+  { to: "/compare", label: "Compare", icon: GitCompareArrows },
+  { to: "/saved", label: "Saved", icon: Bookmark },
   // Changelog is admin-only internal notes. Do not surface to public.
   { to: "/changelog", label: "Changelog", icon: ScrollText, adminOnly: true },
   { to: "/faq", label: "FAQ", icon: Info },
@@ -120,9 +118,9 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           <Compass size={28} strokeWidth={1.5} />
           <span>AI Compass</span>
         </div>
-        <h2 className="login-title">Sign in to continue</h2>
+        <h2 className="login-title">Sign in to AI Compass</h2>
         <p className="login-subtitle">
-          Access Discover, Categories, and Compare.
+          Sync your bookmarks across devices, manage your profile, and get updates on your feedback.
           <br />
           Free · No password needed.
         </p>
@@ -179,10 +177,7 @@ function NavContent({
   }, [user]);
 
   function handleClick(e: React.MouseEvent, item: NavItem) {
-    if (item.protected && !user) {
-      e.preventDefault();
-      onLoginRequest();
-    } else onClose();
+    onClose();
   }
 
   return (
@@ -215,12 +210,11 @@ function NavContent({
           const active =
             location.pathname === item.to ||
             (item.to !== "/" && location.pathname.startsWith(item.to));
-          const locked = !!item.protected && !user;
           return (
             <Link
               key={item.to}
               to={item.to}
-              className={`nav-item${active ? " nav-item-active" : ""}${locked ? " nav-item-locked" : ""}`}
+              className={`nav-item${active ? " nav-item-active" : ""}`}
               onClick={(e) => handleClick(e, item)}
               aria-current={active ? "page" : undefined}
             >
@@ -228,7 +222,6 @@ function NavContent({
                 <Icon size={17} strokeWidth={active ? 2.2 : 1.8} />
               </span>
               <span className="nav-item-label">{item.label}</span>
-              {locked && <Lock size={10} className="nav-item-lock" aria-label="Requires sign-in" />}
               {active && <span className="nav-item-pip" aria-hidden="true" />}
             </Link>
           );

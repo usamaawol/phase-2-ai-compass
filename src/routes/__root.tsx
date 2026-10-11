@@ -257,7 +257,7 @@ function RootComponent() {
   );
 }
 
-const PUBLIC_PATHS = ["/", "/privacy", "/terms"];
+const PROTECTED_PATHS = ["/account", "/admin"];
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading, signIn } = useAuth();
@@ -265,11 +265,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [signInError, setSignInError] = useState<string | null>(null);
 
-  const isPublicPath = PUBLIC_PATHS.some((p) =>
-    p === "/" ? location.pathname === "/" : location.pathname.startsWith(p),
+  const isProtected = PROTECTED_PATHS.some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + "/"),
   );
 
-  if (isPublicPath) {
+  if (!isProtected) {
     return <>{children}</>;
   }
 

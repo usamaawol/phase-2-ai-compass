@@ -4,7 +4,7 @@
  * Submits to tool_submissions with _type: 'feedback'.
  */
 import { useState } from "react";
-import { MessageSquarePlus, X, Send, CheckCircle } from "lucide-react";
+import { MessageSquarePlus, X, Send, CheckCircle, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { submitFeedback, type FeedbackRecord } from "@/lib/admin-db";
 
@@ -17,7 +17,7 @@ const TYPES: { value: FeedbackRecord["type"]; label: string }[] = [
 ];
 
 export function FeedbackButton() {
-  const { user } = useAuth();
+  const { user, signIn } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<FeedbackRecord["type"]>("suggest_tool");
   const [message, setMessage] = useState("");
@@ -32,8 +32,8 @@ export function FeedbackButton() {
     setError("");
     try {
       await submitFeedback({
-        user_id: user?.uid,
-        user_email: user?.email ?? undefined,
+        ...(user?.uid ? { user_id: user.uid } : {}),
+        ...(user?.email ? { user_email: user.email } : {}),
         type,
         message: message.trim(),
         page_url: typeof window !== "undefined" ? window.location.pathname : "",
@@ -138,7 +138,22 @@ export function FeedbackButton() {
                       Sending as {user.displayName ?? user.email}
                     </span>
                   ) : (
-                    <span className="feedback-anon">Sending anonymously</span>
+                    <span className="feedback-anon">
+                      Sending anonymously
+                      <button
+                        type="button"
+                        className="feedback-signin-link"
+                        onClick={async () => {
+                          try {
+                            await signIn();
+                          } catch {
+                            /* sign-in cancelled or failed; user can still send anonymously */
+                          }
+                        }}
+                      >
+                        <LogIn size={12} /> Sign in
+                      </button>
+                    </span>
                   )}
                   <button
                     type="submit"

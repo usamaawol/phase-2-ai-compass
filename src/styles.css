@@ -4212,6 +4212,25 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedback-signin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: var(--primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.feedback-signin-link:hover {
+  background: var(--accent);
 }
 .feedback-send {
   display: flex;
