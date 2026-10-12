@@ -67,6 +67,25 @@ export function AdminLayout() {
         <ShieldAlert size={40} />
         <h1>Access denied</h1>
         <p>Your account does not have admin permissions.</p>
+        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 8 }}>
+          To grant admin access, go to{" "}
+          <strong>Firebase Console → Firestore → admin_users</strong>, create a document with ID{" "}
+          <code
+            style={{
+              background: "var(--secondary)",
+              padding: "1px 6px",
+              borderRadius: 4,
+              fontFamily: "monospace",
+              fontSize: 11,
+              userSelect: "all",
+              wordBreak: "break-all",
+            }}
+          >
+            {user.uid}
+          </code>{" "}
+          and add field <code style={{ fontFamily: "monospace", fontSize: 11 }}>role</code> ={" "}
+          <code style={{ fontFamily: "monospace", fontSize: 11 }}>"admin"</code>.
+        </p>
         <Link to="/" className="admin-denied-link">
           ← Back to AI Compass
         </Link>
