@@ -1053,12 +1053,91 @@
   }
 }
 
+/* ── Extra mobile polish (≤ 700px) ── */
+@media (max-width: 700px) {
+  /* Give the hero slightly less top padding since page-area already adds 56px */
+  .hero-content {
+    padding-block: 32px 30px;
+  }
+
+  /* Prevent hero h1 overflow on narrow screens */
+  .hero h1 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Make sure hero buttons don't overflow */
+  .hero-buttons a,
+  .hero-buttons button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Task chips row: wrap instead of overflow */
+  .task-row {
+    flex-wrap: wrap;
+  }
+
+  /* Tool card: larger tap target for bookmark */
+  .tool-bookmark {
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Page heading: reduce top padding since topbar adds space */
+  .page-heading {
+    padding-top: 20px;
+  }
+
+  /* Discover filters: make selects full-width on mobile */
+  .filter-select {
+    width: 100%;
+    font-size: 13px;
+  }
+
+  /* Category count: hide on very small to save space */
+  .category-count {
+    display: none;
+  }
+
+  /* Profile aside: add horizontal padding */
+  .profile-aside dl div {
+    padding: 10px 0;
+  }
+
+  /* Make the search bar fully visible */
+  .search-form {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  /* Fix auth gate card on mobile */
+  .auth-gate-card {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  /* Wider nav drawer brand text */
+  .nav-brand-name {
+    font-size: 15px;
+  }
+
+  /* Ensure footer nav doesn't overflow */
+  .footer-nav-link {
+    font-size: 12px;
+  }
+}
+
 @media (max-width: 420px) {
   .shell {
     width: calc(100% - 22px);
   }
   .hero h1 {
-    font-size: 31px;
+    font-size: 29px;
+    letter-spacing: -0.03em;
   }
   .hero-description {
     font-size: 13px;
@@ -1070,11 +1149,12 @@
     padding: 14px 10px 14px;
   }
   .stats-bar-inner {
-    height: 42px;
+    height: 40px;
   }
   .stat-chip {
-    padding: 0 12px;
+    padding: 0 10px;
     font-size: 10px;
+    gap: 4px;
   }
   .eyebrow {
     font-size: 10px;
@@ -1586,8 +1666,10 @@
   padding: 0 16px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  position: sticky;
+  position: fixed;   /* fixed so it stays at top even when page-area has padding-top */
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
   box-shadow: 0 1px 10px oklch(0 0 0 / 0.08);
 }
@@ -1672,6 +1754,8 @@
   }
   .page-area {
     margin-left: 0;
+    /* Reserve space for the fixed topbar (56px) so content isn't hidden behind it */
+    padding-top: 56px;
   }
   .mobile-topbar {
     display: flex;
@@ -3665,6 +3749,12 @@
   top: 0;
   z-index: 25;
 }
+@media (max-width: 768px) {
+  /* On mobile the topbar is fixed at 56px, so stick banner below it */
+  .announcement-banner {
+    top: 0; /* already pushed down by page-area padding-top:56px */
+  }
+}
 .announcement-close {
   background: transparent;
   border: none;
@@ -3972,6 +4062,11 @@
   gap: 0;
   height: 46px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+.stats-bar-inner::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 .stat-chip {
   display: flex;
@@ -3986,7 +4081,7 @@
   flex-shrink: 0;
 }
 .stat-chip:first-child {
-  padding-left: 0;
+  padding-left: 16px; /* keep left padding so first chip isn't flush to edge */
 }
 .stat-chip strong {
   color: var(--foreground);
@@ -4000,13 +4095,15 @@
 @media (max-width: 700px) {
   .stats-bar-inner {
     gap: 0;
+    height: 42px;
   }
   .stat-chip {
-    padding: 0 16px;
+    padding: 0 14px;
     font-size: 11px;
+    gap: 5px;
   }
   .stat-chip:first-child {
-    padding-left: 0;
+    padding-left: 14px;
   }
 }
 
@@ -4371,10 +4468,21 @@
 
 @media (max-width: 700px) {
   .feedback-fab {
-    bottom: 16px;
+    bottom: 20px;
     right: 16px;
     padding: 9px 14px;
     font-size: 12px;
+    /* On mobile, show icon only to save horizontal space */
+  }
+  .feedback-fab span {
+    display: none;
+  }
+  .feedback-fab {
+    padding: 10px;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    justify-content: center;
   }
   .feedback-overlay {
     padding: 0;
