@@ -385,14 +385,10 @@ function NavContent({
                   {user.displayName ?? user.email ?? "User"}
                 </Link>
                 <div className="nav-user-actions">
-                  {!adminLoading && isAdmin && (
-                    <>
-                      <Link to="/admin" className="nav-admin-link" onClick={onClose}>
-                        <ShieldCheck size={10} /> Admin
-                      </Link>
-                      <span className="nav-user-dot">·</span>
-                    </>
-                  )}
+                  <Link to="/admin" className="nav-admin-link" onClick={onClose}>
+                    <ShieldCheck size={10} /> Admin dashboard
+                  </Link>
+                  <span className="nav-user-dot">·</span>
                   <Link to="/account" className="nav-admin-link" onClick={onClose}>
                     <User size={10} /> Account
                   </Link>

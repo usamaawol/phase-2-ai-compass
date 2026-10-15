@@ -17,6 +17,8 @@ const TYPES: { value: FeedbackRecord["type"]; label: string }[] = [
   { value: "other", label: "💬 Other" },
 ];
 
+const FEEDBACK_TIMEOUT_MS = 15_000;
+
 export function FeedbackButton() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -31,14 +33,28 @@ export function FeedbackButton() {
     if (!message.trim()) return;
     setBusy(true);
     setError("");
+    let timeoutId: number | undefined;
     try {
-      await submitFeedback({
-        ...(user?.uid ? { user_id: user.uid } : {}),
-        ...(user?.email ? { user_email: user.email } : {}),
-        type,
-        message: message.trim(),
-        page_url: typeof window !== "undefined" ? window.location.pathname : "",
-      });
+      await Promise.race([
+        submitFeedback({
+          ...(user?.uid ? { user_id: user.uid } : {}),
+          ...(user?.email ? { user_email: user.email } : {}),
+          type,
+          message: message.trim(),
+          page_url: typeof window !== "undefined" ? window.location.pathname : "",
+        }),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Firebase has not confirmed this submission. It may still be saved; check the admin Feedback page before trying again to avoid sending it twice.",
+                ),
+              ),
+            FEEDBACK_TIMEOUT_MS,
+          );
+        }),
+      ]);
       setDone(true);
       setTimeout(() => {
         setOpen(false);
@@ -49,6 +65,7 @@ export function FeedbackButton() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send. Please try again.");
     } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       setBusy(false);
     }
   }
