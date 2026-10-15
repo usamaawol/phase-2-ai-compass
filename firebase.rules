@@ -56,8 +56,8 @@ service cloud.firestore {
       // If fieldName is written at all and the caller is signed in,
       // the value must match the caller's token email (or both be null).
       return !(fieldName in request.resource.data)
-        || (request.resource.data[fieldName] == null && request.auth.token.email == null)
-        || (isSignedIn() && request.resource.data[fieldName] == request.auth.token.email);
+        || (isSignedIn() && request.resource.data[fieldName] == request.auth.token.email)
+        || (!isSignedIn() && request.resource.data[fieldName] == null);
     }
 
     function optionalUserIdMatchesToken(fieldName) {
@@ -77,10 +77,11 @@ service cloud.firestore {
     }
 
     // ── Admin users registry ────────────────────────────────────
-    // Only readable/writable by existing admins.
+    // Users can read their own role document so the client can check their
+    // admin status. Only existing admins can read other role documents or write.
     // Initial admin MUST be set via Firebase console or Admin SDK.
     match /admin_users/{uid} {
-      allow read:   if isAdmin();
+      allow read:   if isAdmin() || isOwner(uid);
       allow write:  if isAdmin()
                     && request.resource.data.keys().hasOnly(['role', 'grantedAt', 'grantedBy', 'name', 'email'])
                     && request.resource.data.role is string

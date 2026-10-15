@@ -91,6 +91,18 @@ To run the application with your own Firebase project:
 
 Use restrictive security rules appropriate for your application. Administrator privileges must be assigned through a trusted process and must never be granted by an ordinary client.
 
+### Admin dashboard access
+
+To grant an administrator access, first sign in with that account and copy its UID from Firebase Authentication → Users. In Firestore, create `admin_users/{UID}` with the string field `role` set to `admin`. Do not grant this role from the client application.
+
+The account must be able to read its own role document for the app to verify admin access. Deploy the current rules after setup or after updating them:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Then sign in with the same Firebase account and open `/admin`.
+
 For detailed configuration instructions, see the [Firebase documentation](https://firebase.google.com/docs).
 
 ## ☁️ Deployment

@@ -1,7 +1,7 @@
 /**
  * Floating feedback button — appears on all public pages.
  * Opens a modal with type selector + message field.
- * Submits to tool_submissions with _type: 'feedback'.
+ * Submits feedback to the feedback collection.
  */
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
